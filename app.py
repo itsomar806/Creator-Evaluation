@@ -78,7 +78,7 @@ if st.session_state.audit_triggered and url:
             st.markdown(f"[🔗 View Channel](https://www.youtube.com/channel/{metadata['id']})")
 
         if topic_summary == "No editorial fit.":
-        st.markdown("""
+            st.markdown("""
     <div style="background-color:#fff4f4; border-left: 4px solid #e74c3c; padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
         <strong>🧠 Topic Clusters (based on recent videos):</strong><br>
         <span style="color:#e74c3c;">No editorial fit.</span>

@@ -84,7 +84,7 @@ if st.session_state.audit_triggered and url:
         <span style="color:#e74c3c;">No editorial fit.</span>
     </div>
     """, unsafe_allow_html=True)
-else:
+        else:
     st.markdown(f"**🧠 Topic Clusters (based on recent videos):** {topic_summary}")
         st.markdown("---")
 

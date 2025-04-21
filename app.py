@@ -63,7 +63,7 @@ if st.session_state.audit_triggered and url:
                     break
 
         sorted_topics = [item[0] for item in sorted(topic_counts.items(), key=lambda x: (-x[1], x[0])) if item[1] > 0]
-        topic_summary = ", ".join(sorted_topics)
+        topic_summary = ", ".join(sorted_topics) if sorted_topics else "No editorial fit."
 
         # Step 4: Creator Overview
         st.subheader("📌 Creator Overview")
@@ -141,3 +141,4 @@ if st.session_state.audit_triggered and url:
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")
+

@@ -168,7 +168,6 @@ if st.session_state.audit_triggered and url:
             }
         </style>
         <div class="video-table">
-    """ + top_videos_display.to_html(escape=False, index=False) + "</div>", unsafe_allow_html=True)
         """ + top_videos_display.to_html(escape=False, index=False), unsafe_allow_html=True)
 
     except Exception as e:

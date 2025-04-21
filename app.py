@@ -145,28 +145,28 @@ if st.session_state.audit_triggered and url:
         top_videos_display.columns = ["🎬 Title", "👁️ Views", "👍 Likes", "💬 Comments"]
 
         styled_table_html = f"""
-        <style>
-            .video-table table {{
-                width: 100%;
-                border-collapse: collapse;
-            }}
-            .video-table th, .video-table td {{
-                padding: 10px;
-                border: 1px solid #ddd;
-                text-align: left;
-                font-size: 15px;
-            }}
-            .video-table th {{
-                background-color: #f2f2f2;
-            }}
-            .video-table tr:hover {{
-                background-color: #f9f9f9;
-            }}
-        </style>
-        <div class="video-table">
-        {top_videos_display.to_html(escape=False, index=False)}
-        </div>
-        """
+            <style>
+                .video-table table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                }}
+                .video-table th, .video-table td {{
+                    padding: 10px;
+                    border: 1px solid #ddd;
+                    text-align: left;
+                    font-size: 15px;
+                }}
+                .video-table th {{
+                    background-color: #f2f2f2;
+                }}
+                .video-table tr:hover {{
+                    background-color: #f9f9f9;
+                }}
+            </style>
+            <div class="video-table">
+            {top_videos_display.to_html(escape=False, index=False)}
+            </div>
+            """
         
         st.markdown(styled_table_html, unsafe_allow_html=True)
 

@@ -143,10 +143,12 @@ if st.session_state.audit_triggered and url:
 
         df = pd.DataFrame(videos)
         top_videos = df.sort_values(by="views", ascending=False).head(10).reset_index(drop=True)
-        top_videos_display = top_videos[["title", "views", "likes", "comments"]]
+        top_videos["video_url"] = top_videos["video_id"].apply(lambda x: f"https://www.youtube.com/watch?v={x}")
+top_videos["title"] = top_videos.apply(lambda row: f'<a href="{row.video_url}" target="_blank">{row.title}</a>', axis=1)
+top_videos_display = top_videos[["title", "views", "likes", "comments"]]
         top_videos_display.columns = ["🎬 Title", "👁️ Views", "👍 Likes", "💬 Comments"]
 
-        st.dataframe(top_videos_display, use_container_width=True)
+        st.markdown(top_videos_display.to_html(escape=False, index=False), unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")

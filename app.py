@@ -79,26 +79,14 @@ if st.session_state.audit_triggered and url:
 
         if topic_summary == "No editorial fit.":
             st.markdown("""
-<style>
-    .video-table table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    .video-table th, .video-table td {
-        padding: 10px;
-        border: 1px solid #ddd;
-        text-align: left;
-        font-size: 15px;
-    }
-    .video-table th {
-        background-color: #f2f2f2;
-    }
-    .video-table tr:hover {
-        background-color: #f9f9f9;
-    }
-</style>
-<div class="video-table">
-""" + top_videos_display.to_html(escape=False, index=False) + "</div>", unsafe_allow_html=True)
-            
+            <div style="background-color:#fff4f4; border-left: 4px solid #e74c3c; padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+                <strong>🧠 Topic Clusters (based on recent videos):</strong><br>
+                <span style="color:#e74c3c;">No editorial fit.</span>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown(f"**🧠 Topic Clusters (based on recent videos):** {topic_summary}")
+
+
     except Exception as e:
         st.error(f"Something went wrong: {e}")

@@ -148,7 +148,24 @@ if st.session_state.audit_triggered and url:
         top_videos_display = top_videos[["title", "views", "likes", "comments"]]
         top_videos_display.columns = ["🎬 Title", "👁️ Views", "👍 Likes", "💬 Comments"]
 
-        st.markdown(top_videos_display.to_html(escape=False, index=False), unsafe_allow_html=True)
+        st.markdown("""
+        <style>
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            th, td {
+                padding: 10px;
+                border: 1px solid #ddd;
+                text-align: left;
+                font-size: 15px;
+            }
+            th {
+                background-color: #f2f2f2;
+            }
+            tr:hover {background-color: #f9f9f9;}
+        </style>
+        """ + top_videos_display.to_html(escape=False, index=False), unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")

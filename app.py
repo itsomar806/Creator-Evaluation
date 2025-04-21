@@ -77,7 +77,15 @@ if st.session_state.audit_triggered and url:
             st.markdown(f"**👥 Subscribers:** {metadata['subs']:,}")
             st.markdown(f"[🔗 View Channel](https://www.youtube.com/channel/{metadata['id']})")
 
-        st.markdown(f"**🧠 Topic Clusters (based on recent videos):** {topic_summary}")
+        if topic_summary == "No editorial fit.":
+    st.markdown("""
+    <div style="background-color:#fff4f4; border-left: 4px solid #e74c3c; padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+        <strong>🧠 Topic Clusters (based on recent videos):</strong><br>
+        <span style="color:#e74c3c;">No editorial fit.</span>
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown(f"**🧠 Topic Clusters (based on recent videos):** {topic_summary}")
         st.markdown("---")
 
         avg_views = calculate_average_views(videos)
@@ -141,4 +149,3 @@ if st.session_state.audit_triggered and url:
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")
-

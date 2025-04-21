@@ -79,13 +79,14 @@ if st.session_state.audit_triggered and url:
 
         if topic_summary == "No editorial fit.":
             st.markdown("""
-    <div style="background-color:#fff4f4; border-left: 4px solid #e74c3c; padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
-        <strong>🧠 Topic Clusters (based on recent videos):</strong><br>
-        <span style="color:#e74c3c;">No editorial fit.</span>
-    </div>
-    """, unsafe_allow_html=True)
+            <div style="background-color:#fff4f4; border-left: 4px solid #e74c3c; padding: 1rem; border-radius: 6px; margin-bottom: 1rem;">
+                <strong>🧠 Topic Clusters (based on recent videos):</strong><br>
+                <span style="color:#e74c3c;">No editorial fit.</span>
+            </div>
+            """, unsafe_allow_html=True)
         else:
-    st.markdown(f"**🧠 Topic Clusters (based on recent videos):** {topic_summary}")
+            st.markdown(f"**🧠 Topic Clusters (based on recent videos):** {topic_summary}")
+
         st.markdown("---")
 
         avg_views = calculate_average_views(videos)

@@ -87,6 +87,84 @@ if st.session_state.audit_triggered and url:
         else:
             st.markdown(f"**🧠 Topic Clusters (based on recent videos):** {topic_summary}")
 
+        st.markdown("---")
+
+        # Step 5: Audience & Sponsorship Calculator
+        avg_views = calculate_average_views(videos)
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown(f"""
+            <div style='background-color:#f9f9f9; padding: 1.5rem; border-radius: 10px; border: 1px solid #ddd; text-align: center;'>
+                <h3 style='margin-bottom: 0.5rem;'>📈 Audience & Engagement</h3>
+                <p style='font-size: 1.2rem; margin-top: 0;'>💡 <strong>Average Views (last 30 videos):</strong> {avg_views:,}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col2:
+            cpv_options = {
+                "Conservative CVR (0.30%)": 0.003,
+                "Median CVR (0.35%)": 0.0035,
+                "Best Case CVR (0.50%)": 0.005
+            }
+            selected_label = st.selectbox("🎯 Select a CPV Scenario", options=list(cpv_options.keys()))
+            target_cpv = cpv_options[selected_label]
+            recommended_price = round(avg_views * target_cpv)
+
+            st.markdown(f"""
+            <div style='background-color:#eafbea; padding: 1.5rem; border-radius: 10px; border: 1px solid #c7eacc; text-align: center;'>
+                <h3 style='margin-bottom: 0.5rem;'>💰 Sponsorship Calculator</h3>
+                <p style='font-size: 1.1rem; margin: 0;'>Using <strong>{selected_label}</strong><br>Target CPV: <strong>${target_cpv:.4f}</strong></p>
+                <p style='font-size: 1.5rem; margin-top: 0.75rem;'><strong>${recommended_price:,}</strong> per video</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Step 6: Growth Chart
+        views_df = pd.DataFrame(videos)
+        views_df["published"] = pd.to_datetime(views_df["published"])
+        views_df = views_df.sort_values(by="published", ascending=True).reset_index(drop=True)
+        views_df["label"] = views_df["published"].dt.strftime("%b %d")
+
+        st.markdown("#### 📈 Growth Over Time (by Views)")
+        chart = alt.Chart(views_df).mark_bar().encode(
+            x=alt.X("label:N", sort=None, title="Publish Date"),
+            y=alt.Y("views:Q", title="Views"),
+            tooltip=["label", "views", "title"]
+        ).properties(height=400)
+        st.altair_chart(chart, use_container_width=True)
+
+        # Step 7: Top Videos Table (Clickable)
+        st.markdown("#### 🔥 Top 10 Performing Videos")
+        st.markdown("These are the creator’s 10 most viewed recent videos:")
+
+        df = pd.DataFrame(videos)
+        top_videos = df.sort_values(by="views", ascending=False).head(10).reset_index(drop=True)
+        top_videos["video_url"] = top_videos["video_id"].apply(lambda x: f"https://www.youtube.com/watch?v={x}")
+        top_videos["title"] = top_videos.apply(lambda row: f'<a href="{row.video_url}" target="_blank">{row.title}</a>', axis=1)
+        top_videos_display = top_videos[["title", "views", "likes", "comments"]]
+        top_videos_display.columns = ["🎬 Title", "👁️ Views", "👍 Likes", "💬 Comments"]
+
+        st.markdown("""
+        <style>
+            .video-table table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            .video-table th, .video-table td {
+                padding: 10px;
+                border: 1px solid #ddd;
+                text-align: left;
+                font-size: 15px;
+            }
+            .video-table th {
+                background-color: #f2f2f2;
+            }
+            .video-table tr:hover {
+                background-color: #f9f9f9;
+            }
+        </style>
+        <div class="video-table">
+        """ + top_videos_display.to_html(escape=False, index=False) + "</div>", unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")

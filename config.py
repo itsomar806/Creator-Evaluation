@@ -1,0 +1,2 @@
+# config.py
+YOUTUBE_API_KEY = "AIzaSyCZvrlrMXE1jCPDLZ6NVMDe1uf_OXhYBkM"

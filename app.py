@@ -105,7 +105,35 @@ if st.session_state.audit_triggered and url:
         else:
             st.markdown(f"**🧠 Topic Clusters (based on recent videos):** {topic_summary}")
 
-        # Charts & Calculations
+        # Audience & Sponsorship side-by-side
+        avg_views = calculate_average_views(videos)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("""
+            <div style='background-color:#f9f9f9; padding: 1.5rem; border-radius: 10px; border: 1px solid #ddd; text-align: center;'>
+                <h3 style='margin-bottom: 0.5rem;'>📈 Audience & Engagement</h3>
+                <p style='font-size: 1.2rem; margin-top: 0;'>💡 <strong>Average Views (last 30 videos):</strong> {avg_views:,}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        with col2:
+            cpv_options = {
+                "Conservative CVR (0.30%)": 0.003,
+                "Median CVR (0.35%)": 0.0035,
+                "Best Case CVR (0.50%)": 0.005
+            }
+            selected_label = st.selectbox("🎯 Select a CPV Scenario", options=list(cpv_options.keys()))
+            target_cpv = cpv_options[selected_label]
+            recommended_price = round(avg_views * target_cpv)
+
+            st.markdown(f"""
+            <div style='background-color:#eafbea; padding: 1.5rem; border-radius: 10px; border: 1px solid #c7eacc; text-align: center;'>
+                <h3 style='margin-bottom: 0.5rem;'>💰 Sponsorship Calculator</h3>
+                <p style='font-size: 1.1rem; margin: 0;'>Using <strong>{selected_label}</strong><br>Target CPV: <strong>${target_cpv:.4f}</strong></p>
+                <p style='font-size: 1.5rem; margin-top: 0.75rem;'><strong>${recommended_price:,}</strong> per video</p>
+            </div>
+            """, unsafe_allow_html=True)
+
         st.markdown("---")
         st.subheader("📊 Growth Over Time (by Views)")
         views_df = pd.DataFrame(videos)
@@ -119,26 +147,6 @@ if st.session_state.audit_triggered and url:
             tooltip=["label", "views", "title"]
         ).properties(height=400)
         st.altair_chart(chart, use_container_width=True)
-
-        # Sponsorship calculator
-        st.subheader("💰 Sponsorship Calculator")
-        avg_views = calculate_average_views(videos)
-        cpv_options = {
-            "Conservative CVR (0.30%)": 0.003,
-            "Median CVR (0.35%)": 0.0035,
-            "Best Case CVR (0.50%)": 0.005
-        }
-        selected_label = st.selectbox("Select a CPV Scenario:", options=list(cpv_options.keys()))
-        target_cpv = cpv_options[selected_label]
-        recommended_price = round(avg_views * target_cpv)
-
-        st.markdown(f"""
-            <div style='background-color:#eafbea; padding: 1rem; border-radius: 8px; border: 1px solid #c7eacc;'>
-                <strong>Target CPV:</strong> ${target_cpv:.4f}<br>
-                <strong>Average Views:</strong> {avg_views:,}<br>
-                <strong>Recommended Cost per Video:</strong> <span style='font-size: 1.5rem;'>${recommended_price:,}</span>
-            </div>
-        """, unsafe_allow_html=True)
 
         # Top 10 performing videos
         st.subheader("🔥 Top 10 Performing Videos")

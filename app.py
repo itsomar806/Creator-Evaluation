@@ -105,11 +105,12 @@ if st.session_state.audit_triggered and url:
         else:
             st.markdown(f"**🧠 Topic Clusters (based on recent videos):** {topic_summary}")
 
-        # Audience & Sponsorship side-by-side
+        st.markdown("---")
+
         avg_views = calculate_average_views(videos)
         col1, col2 = st.columns(2)
         with col1:
-            st.markdown("""
+            st.markdown(f"""
             <div style='background-color:#f9f9f9; padding: 1.5rem; border-radius: 10px; border: 1px solid #ddd; text-align: center;'>
                 <h3 style='margin-bottom: 0.5rem;'>📈 Audience & Engagement</h3>
                 <p style='font-size: 1.2rem; margin-top: 0;'>💡 <strong>Average Views (last 30 videos):</strong> {avg_views:,}</p>

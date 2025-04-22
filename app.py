@@ -108,6 +108,7 @@ if st.session_state.audit_triggered and url:
     except Exception as e:
         st.error(f"Something went wrong: {e}")
 
-    st.markdown("---")
-    st.info(
-"✅ Creator Overview loaded successfully. Ready to add engagement charts, sponsorship calculator, and top-performing videos.")
+
+# Always show a placeholder below regardless of success
+st.markdown("---")
+st.info("✅ Creator Overview loaded successfully. Ready to add engagement charts, sponsorship calculator, and top-performing videos.")

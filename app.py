@@ -34,6 +34,9 @@ input[type="text"] {
 </style>
 """, unsafe_allow_html=True)
 
+# Center the logo and input
+st.markdown("<h2 style='text-align: center; color: #FFCD78;'>HubSpot Creator Audit</h2>", unsafe_allow_html=True)
+
 # Handle session state for rerun persistence
 if "audit_triggered" not in st.session_state:
     st.session_state.audit_triggered = False

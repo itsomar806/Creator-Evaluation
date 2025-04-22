@@ -110,31 +110,31 @@ if st.session_state.audit_triggered and url:
 
 
 # Always show a placeholder below regardless of success
-st.markdown("---")
-st.subheader("📊 Growth Over Time (by Views)")
-        views_df = pd.DataFrame(videos)
-        views_df["published"] = pd.to_datetime(views_df["published"])
-        views_df = views_df.sort_values(by="published", ascending=True).reset_index(drop=True)
-        views_df["label"] = views_df["published"].dt.strftime("%b %d")
-
-        chart = alt.Chart(views_df).mark_bar().encode(
-            x=alt.X("label:N", sort=None, title="Publish Date"),
-            y=alt.Y("views:Q", title="Views"),
-            tooltip=["label", "views", "title"]
-        ).properties(height=400)
-        st.altair_chart(chart, use_container_width=True)
-
-        # Sponsorship calculator
-        st.subheader("💰 Sponsorship Calculator")
-        avg_views = calculate_average_views(videos)
-        cpv_options = {
-            "Conservative CVR (0.30%)": 0.003,
-            "Median CVR (0.35%)": 0.0035,
-            "Best Case CVR (0.50%)": 0.005
-        }
-        selected_label = st.selectbox("Select a CPV Scenario:", options=list(cpv_options.keys()))
-        target_cpv = cpv_options[selected_label]
-        recommended_price = round(avg_views * target_cpv)
+    st.markdown("---")
+    st.subheader("📊 Growth Over Time (by Views)")
+            views_df = pd.DataFrame(videos)
+            views_df["published"] = pd.to_datetime(views_df["published"])
+            views_df = views_df.sort_values(by="published", ascending=True).reset_index(drop=True)
+            views_df["label"] = views_df["published"].dt.strftime("%b %d")
+    
+            chart = alt.Chart(views_df).mark_bar().encode(
+                x=alt.X("label:N", sort=None, title="Publish Date"),
+                y=alt.Y("views:Q", title="Views"),
+                tooltip=["label", "views", "title"]
+            ).properties(height=400)
+            st.altair_chart(chart, use_container_width=True)
+    
+            # Sponsorship calculator
+            st.subheader("💰 Sponsorship Calculator")
+            avg_views = calculate_average_views(videos)
+            cpv_options = {
+                "Conservative CVR (0.30%)": 0.003,
+                "Median CVR (0.35%)": 0.0035,
+                "Best Case CVR (0.50%)": 0.005
+            }
+            selected_label = st.selectbox("Select a CPV Scenario:", options=list(cpv_options.keys()))
+            target_cpv = cpv_options[selected_label]
+            recommended_price = round(avg_views * target_cpv)
 
         st.markdown(f"""
         <div style='background-color:#eafbea; padding: 1rem; border-radius: 8px; border: 1px solid #c7eacc;'>

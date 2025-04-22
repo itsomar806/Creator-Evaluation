@@ -142,7 +142,7 @@ st.markdown("---")
             <strong>Average Views:</strong> {avg_views:,}<br>
             <strong>Recommended Cost per Video:</strong> <span style='font-size: 1.5rem;'>${recommended_price:,}</span>
         </div>
-    """safe_allow_html=True)
+    """, unsafe_allow_html=True)
 
     # Top 10 performing videos
     st.subheader("🔥 Top 10 Performing Videos")
@@ -175,5 +175,5 @@ st.markdown("---")
         <div class="video-table">
         {top_videos_display.to_html(escape=False, index=False)}
         </div>
-        """
+    """
     st.markdown(styled_table_html, unsafe_allow_html=True)

@@ -34,7 +34,7 @@ input[type="text"] {
 </style>
 """, unsafe_allow_html=True)
 
-# Center the title and input
+# Center the logo and input
 st.markdown("<h2 style='text-align: center; color: #FFCD78;'>HubSpot Creator Audit</h2>", unsafe_allow_html=True)
 
 # Handle session state for rerun persistence
@@ -107,3 +107,7 @@ if st.session_state.audit_triggered and url:
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")
+
+        # Add a placeholder below Creator Overview in case of success
+    st.markdown("---")
+    st.info("✅ Creator Overview loaded successfully. Ready to add engagement charts, sponsorship calculator, and top-performing videos.")

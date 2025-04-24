@@ -31,6 +31,22 @@ input[type="text"] {
     border-radius: 8px;
     padding: 0.5rem;
 }
+.video-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.video-table th, .video-table td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: left;
+    font-size: 15px;
+}
+.video-table th {
+    background-color: #f2f2f2;
+}
+.video-table tr:hover {
+    background-color: #f9f9f9;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -149,7 +165,7 @@ if st.session_state.audit_triggered and url:
         ).properties(height=400)
         st.altair_chart(chart, use_container_width=True)
 
-        # Top 10 performing videos
+        st.markdown("---")
         st.subheader("🔥 Top 10 Performing Videos")
         df = pd.DataFrame(videos)
         top_videos = df.sort_values(by="views", ascending=False).head(10).reset_index(drop=True)
@@ -158,30 +174,12 @@ if st.session_state.audit_triggered and url:
         top_videos_display = top_videos[["title", "views", "likes", "comments"]]
         top_videos_display.columns = ["🎬 Title", "👁️ Views", "👍 Likes", "💬 Comments"]
 
-        styled_table_html = f"""
-            <style>
-                .video-table table {{
-                    width: 100%;
-                    border-collapse: collapse;
-                }}
-                .video-table th, .video-table td {{
-                    padding: 10px;
-                    border: 1px solid #ddd;
-                    text-align: left;
-                    font-size: 15px;
-                }}
-                .video-table th {{
-                    background-color: #f2f2f2;
-                }}
-                .video-table tr:hover {{
-                    background-color: #f9f9f9;
-                }}
-            </style>
-            <div class="video-table">
-            {top_videos_display.to_html(escape=False, index=False)}
-            </div>
-        """
-        st.markdown(styled_table_html, unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="video-table">
+        {top_videos_display.to_html(escape=False, index=False)}
+        </div>
+        """, unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")
+

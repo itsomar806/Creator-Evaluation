@@ -102,7 +102,8 @@ You're assessing a YouTube creator for brand partnership risk. Based on the foll
 Search results:
 {summary}
 """
-    response = openai.ChatCompletion.create(
+    client = openai.Client()
+    response = client.chat.completions.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": "You are a brand safety analyst."},

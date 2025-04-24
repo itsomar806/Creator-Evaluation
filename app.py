@@ -31,7 +31,7 @@ def get_channel_metadata(channel_id):
     youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
     request = youtube.channels().list(part="snippet,statistics", id=channel_id)
     response = request.execute()
-        items = response.get("items", [])
+    items = response.get("items", [])
     if not items:
         raise ValueError("Channel not found. Please check the URL or handle.")
     channel = items[0]

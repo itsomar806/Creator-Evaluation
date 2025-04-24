@@ -52,7 +52,7 @@ def get_channel_metadata(channel_identifier):
     }
 
 def get_recent_videos(channel_id, max_results=30):
-    YOUTUBE_API_KEY = st.secrets['youtube']['api_key']
+    YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
     youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
     search_response = youtube.search().list(part="id", channelId=channel_id, order="date", maxResults=max_results).execute()
     video_ids = [item['id']['videoId'] for item in search_response['items'] if item['id']['kind'] == 'youtube#video']

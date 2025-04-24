@@ -75,13 +75,7 @@ def get_brand_safety_assessment(query):
     client = OpenAI(api_key=openai_api_key)
     search = GoogleSearch({"q": query, "api_key": st.secrets["serpapi"]["api_key"]})
     results = search.get_dict().get("organic_results", [])
-    summary = "
-
-".join([f"- {r.get('title')}
-{r.get('snippet')}
-{r.get('link')}" for r in results])
-{r.get('snippet')}
-{r.get('link')}" for r in results])
+    summary = "".join([f"- {r.get('title')}{r.get('snippet')}{r.get('link')}" for r in results])
 
     prompt = f"""
 You're assessing a YouTube creator for brand partnership risk. Based on the following search results, return a JSON:

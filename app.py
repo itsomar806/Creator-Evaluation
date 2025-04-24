@@ -98,15 +98,20 @@ Return the result in this format:
   "summary": "Short explanation of the rating"
 }}
 """
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a brand risk assessment expert for influencer marketing."},
-                {"role": "user", "content": prompt}
-            ]
-        )
+        from openai import OpenAI
 
-        result = response.choices[0].message.content
+client = OpenAI(api_key=openai.api_key)
+
+chat_response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[
+        {"role": "system", "content": "You are a brand risk assessment expert for influencer marketing."},
+        {"role": "user", "content": prompt}
+    ]
+)
+
+result = chat_response.choices[0].message.content
+
         st.markdown("---")
         st.subheader("🚨 Brand Safety & HEART Assessment")
         import json

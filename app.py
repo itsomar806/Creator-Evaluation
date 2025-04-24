@@ -103,7 +103,8 @@ Search results:
 {summary}
 """
     openai.api_key = openai_api_key
-    response = openai.ChatCompletion.create(
+    client = openai.OpenAI(api_key=openai_api_key)
+    response = client.chat.completions.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": "You are a brand safety analyst."},

@@ -112,17 +112,17 @@ if st.session_state.audit_triggered and url:
             st.markdown(f"**👥 Subscribers:** {metadata['subs']:,}")
             st.markdown(f"[🔗 View Channel](https://www.youtube.com/channel/{metadata['id']})")
             
-topic_keywords = {
-            "Marketing": ["marketing", "brand", "ads", "advertising", "promotion"],
-            "Sales": ["sales", "sell", "pitch", "close"],
-            "Entrepreneurship / Business": ["startup", "founder", "entrepreneur", "business", "revenue", "profit"],
-            "AI": ["ai", "artificial", "intelligence", "chatgpt", "machine learning"],
-            "Skill Development": ["learn", "course", "skills", "habits", "productivity", "growth"],
-            "Web Development": ["developer", "web", "html", "css", "javascript", "react"],
-            "Operations": ["ops", "operations", "process", "workflow"],
-            "Customer Success": ["customer", "support", "success", "retention"],
-            "Tech": ["tech", "technology", "software", "tools"]
-        }
+        topic_keywords = {
+                    "Marketing": ["marketing", "brand", "ads", "advertising", "promotion"],
+                    "Sales": ["sales", "sell", "pitch", "close"],
+                    "Entrepreneurship / Business": ["startup", "founder", "entrepreneur", "business", "revenue", "profit"],
+                    "AI": ["ai", "artificial", "intelligence", "chatgpt", "machine learning"],
+                    "Skill Development": ["learn", "course", "skills", "habits", "productivity", "growth"],
+                    "Web Development": ["developer", "web", "html", "css", "javascript", "react"],
+                    "Operations": ["ops", "operations", "process", "workflow"],
+                    "Customer Success": ["customer", "support", "success", "retention"],
+                    "Tech": ["tech", "technology", "software", "tools"]
+                }
         st.markdown("---")
         # --- Sponsorship Calculator ---
         st.subheader("📊 Sponsorship Calculator")

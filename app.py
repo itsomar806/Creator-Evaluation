@@ -8,7 +8,7 @@ import requests
 from urllib.parse import urlparse, parse_qs
 from serpapi import GoogleSearch
 import googleapiclient.discovery
-from openai import OpenAI
+import openai
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -79,7 +79,7 @@ def calculate_average_views(videos):
 def get_brand_safety_assessment(query):
     ai_response = ""  # fallback initialization
     openai_api_key = os.getenv("OPENAI_API_KEY")
-    client = OpenAI(api_key=openai_api_key)
+    openai.api_key = openai_api_key
     search = GoogleSearch({"q": query, "api_key": os.getenv("SERPAPI_API_KEY")})
     results = search.get_dict().get("organic_results", [])
     summary = "\n\n".join([f"- {r.get('title')}\n{r.get('snippet')}\n{r.get('link')}" for r in results])
@@ -102,7 +102,7 @@ You're assessing a YouTube creator for brand partnership risk. Based on the foll
 Search results:
 {summary}
 """
-    response = client.chat.completions.create(
+    response = openai.ChatCompletion.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": "You are a brand safety analyst."},

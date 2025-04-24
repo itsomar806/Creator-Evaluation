@@ -119,7 +119,7 @@ st.title("🔍 YouTube Creator Audit")
 
 # OpenAI key test button
 if st.button("🧪 Test OpenAI Key"):
-    test_key = os.getenv("OPENAI_API_KEY")
+    openai_api_key = os.getenv("OPENAI_API_KEY")
     if not test_key:
         st.error("❌ OPENAI_API_KEY not found in environment.")
     else:

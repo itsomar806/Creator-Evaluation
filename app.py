@@ -13,6 +13,15 @@ from dashboard import (
     calculate_average_views
 )
 
+from youtube_transcript_api import YouTubeTranscriptApi
+
+def get_transcript_text(video_id):
+    try:
+        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        return " ".join([t['text'] for t in transcript])
+    except Exception:
+        return "Transcript unavailable"
+
 openai_api_key = st.secrets["openai"]["api_key"] if "openai" in st.secrets else os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=openai_api_key)
 
@@ -163,13 +172,19 @@ if st.session_state.audit_triggered and url:
         st.markdown("---")
         st.subheader("🚨 Brand Safety & HEART Assessment")
 
-        titles_and_descriptions = "\n".join([
-            f"Title: {v['title']}\nDescription: {v.get('description', 'No description')}"
-            for v in videos[:30]
-        ])
+        # Use transcript-enhanced content for deeper analysis
+        prompt_chunks = []
+        for v in videos[:10]:  # limit to 10 to stay under token limits
+            transcript = get_transcript_text(v['video_id'])
+            prompt_chunks.append(f"""Title: {v['title']}
+        Description: {v.get('description', 'No description')}
+        Transcript: {transcript}
+        """)
+        
+        titles_and_transcripts = "\n\n".join(prompt_chunks)
 
         prompt = f"""
-Analyze the following YouTube content and return a JSON object only (no commentary or markdown):
+Analyze the following YouTube videos and return a JSON object only (no commentary or markdown):
 
 {{
   "brand_risk_score": 1-10,
@@ -181,11 +196,11 @@ Analyze the following YouTube content and return a JSON object only (no commenta
     "Remarkable": "Yes" or "No",
     "Transparent": "Yes" or "No"
   }},
-  "summary": "Brief summary (1-2 sentences) of content risks and HEART alignment"
+  "summary": "Brief summary (1-2 sentences) of brand safety and HEART alignment"
 }}
 
 Content:
-{titles_and_descriptions}
+{titles_and_transcripts}
 """
 
         try:

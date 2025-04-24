@@ -87,7 +87,6 @@ if st.session_state.audit_triggered and url:
             st.markdown(f"**👥 Subscribers:** {metadata['subs']:,}")
             st.markdown(f"[🔗 View Channel](https://www.youtube.com/channel/{metadata['id']})")
 
-        # Topic Classification
         topic_keywords = {
             "Marketing": ["marketing", "brand", "ads", "advertising", "promotion"],
             "Sales": ["sales", "sell", "pitch", "close"],
@@ -116,7 +115,6 @@ if st.session_state.audit_triggered and url:
         st.markdown(f"**🧠 Topic Clusters (based on recent videos):** {topic_summary}")
         st.markdown("---")
 
-        # Growth Chart
         views_df = pd.DataFrame(videos)
         views_df["published"] = pd.to_datetime(views_df["published"])
         views_df = views_df.sort_values(by="published", ascending=True).reset_index(drop=True)
@@ -130,7 +128,6 @@ if st.session_state.audit_triggered and url:
         ).properties(height=400)
         st.altair_chart(chart, use_container_width=True)
 
-        # Top 10 Performing Videos
         st.subheader("🔥 Top 10 Performing Videos")
         df = pd.DataFrame(videos)
         top_videos = df.sort_values(by="views", ascending=False).head(10).reset_index(drop=True)
@@ -140,7 +137,6 @@ if st.session_state.audit_triggered and url:
         top_videos_display.columns = ["🎬 Title", "👁️ Views", "👍 Likes", "💬 Comments"]
         st.markdown("<div class='video-table'>" + top_videos_display.to_html(escape=False, index=False) + "</div>", unsafe_allow_html=True)
 
-        # Sponsorship Calculator
         st.markdown("---")
         st.subheader("📊 Sponsorship Calculator")
         col1, col2 = st.columns(2)
@@ -158,7 +154,6 @@ if st.session_state.audit_triggered and url:
             st.markdown(f"**Target CPV:** ${target_cpv:.4f}")
             st.markdown(f"**Recommended Cost per Video:** ${recommended_price:,}")
 
-        # Brand Safety + HEART Evaluation
         titles_and_descriptions = "\n".join([
             f"Title: {v['title']}\nDescription: {v.get('description', 'No description')}"
             for v in videos[:30]
@@ -224,7 +219,7 @@ Return the result in this format:
 
         except Exception as err:
             st.warning("⚠️ Unable to parse AI response for Go/No-Go logic.")
-            st.markdown(f"```json\n{result}\n```)\n")
+            st.markdown(f"<pre style='background:#f6f6f6;padding:1rem;border-radius:6px;font-size:13px;'>{result}</pre>", unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")

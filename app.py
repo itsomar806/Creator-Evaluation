@@ -117,6 +117,19 @@ st.set_page_config(page_title="YouTube Creator Audit", layout="wide")
 
 st.title("🔍 YouTube Creator Audit")
 
+# OpenAI key test button
+if st.button("🧪 Test OpenAI Key"):
+    test_key = os.getenv("OPENAI_API_KEY")
+    if not test_key:
+        st.error("❌ OPENAI_API_KEY not found in environment.")
+    else:
+        try:
+            test_client = openai.OpenAI(api_key=test_key)
+            response = test_client.models.list()
+            st.success("✅ OpenAI key is valid and working.")
+        except Exception as err:
+            st.error(f"❌ OpenAI key test failed: {err}")
+
 if "audit_triggered" not in st.session_state:
     st.session_state.audit_triggered = False
 

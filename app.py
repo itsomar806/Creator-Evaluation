@@ -81,6 +81,10 @@ def get_brand_safety_assessment(query):
 {r.get('snippet')}
 {r.get('link')}" for r in results])
 
+".join([f"- {r.get('title')}
+{r.get('snippet')}
+{r.get('link')}" for r in results])
+
     prompt = f"""
 You're assessing a YouTube creator for brand partnership risk. Based on the following search results, return a JSON:
 {{

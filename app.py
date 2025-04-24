@@ -200,9 +200,9 @@ if st.session_state.audit_triggered and url:
             st.markdown(f"**Brand Risk Score:** {parsed.get('brand_risk_score', 'N/A')}")
             st.markdown(f"**HEART Values:** {parsed.get('heart_values', {})}")
             st.markdown(f"**Summary:** {parsed.get('summary', '')}")
-        except Exception:
+        except Exception as err:
             st.warning("⚠️ Unable to parse AI response.")
-            st.markdown(ai_response)
+            st.markdown(f"Raw AI response unavailable. Error: {err}")
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")

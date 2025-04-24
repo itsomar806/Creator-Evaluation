@@ -77,6 +77,42 @@ if st.session_state.audit_triggered and url:
             comments = video["comments"]
             video["engagement_rate"] = round(((likes + comments) / views) * 100, 2) if views > 0 else 0
 
+        avg_views = calculate_average_views(videos)
+
+        # Creator Overview
+        st.subheader("📌 Creator Overview")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"**👤 Channel Name:** {metadata['title']}")
+            st.markdown(f"**🔗 Handle:** `{metadata['handle']}`")
+            st.markdown(f"**🆔 Channel ID:** `{metadata['id']}`")
+        with col2:
+            st.markdown(f"**🌍 Country:** {metadata['country']}")
+            st.markdown(f"**👥 Subscribers:** {metadata['subs']:,}")
+            st.markdown(f"[🔗 View Channel](https://www.youtube.com/channel/{metadata['id']})")
+
+        # Sponsorship Calculator
+        st.markdown("---")
+        st.subheader("📊 Sponsorship Calculator")
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.markdown(f"**📈 Average Views (last 30 videos):** {avg_views:,}")
+
+        with col2:
+            cpv_options = {
+                "Conservative CVR (0.30%)": 0.003,
+                "Median CVR (0.35%)": 0.0035,
+                "Best Case CVR (0.50%)": 0.005
+            }
+            selected_label = st.selectbox("🎯 Select a CPV Scenario", options=list(cpv_options.keys()))
+            target_cpv = cpv_options[selected_label]
+            recommended_price = round(avg_views * target_cpv)
+
+            st.markdown(f"**Target CPV:** ${target_cpv:.4f}")
+            st.markdown(f"**Recommended Cost per Video:** ${recommended_price:,}")
+
+        # Go/No-Go Framework
         titles_and_descriptions = "\n".join([
             f"Title: {v['title']}\nDescription: {v.get('description', 'No description')}"
             for v in videos[:30]
@@ -116,6 +152,8 @@ Return the result in this format:
             parsed_result = json.loads(result)
             heart = parsed_result.get("heart_values", {})
             risk_score = parsed_result.get("brand_risk_score", 10)
+            risk_flags = parsed_result.get("risk_flags", [])
+            summary = parsed_result.get("summary", "")
             yes_count = list(heart.values()).count("Yes")
 
             if risk_score <= 3 and yes_count >= 4:
@@ -126,10 +164,21 @@ Return the result in this format:
                 go_status = "🔴 NO-GO - High risk or poor HEART alignment"
 
             st.markdown(f"### ✅ Go/No-Go Recommendation\n**{go_status}**")
+            st.markdown(f"#### 🧠 HEART Value Checks")
+            st.markdown("""
+            <ul style='list-style-type: none; padding-left: 0;'>
+            """ + "\n".join([
+                f"<li><strong>{k}</strong>: {'✅' if v == 'Yes' else '❌'} {v}</li>"
+                for k, v in heart.items()
+            ]) + "</ul>", unsafe_allow_html=True)
+
+            st.markdown(f"#### 🚩 Risk Score: {risk_score}/10")
+            st.markdown(f"#### ⚠️ Flags: {', '.join(risk_flags) if risk_flags else 'None'}")
+            st.markdown(f"#### 📝 Summary: {summary}")
+
         except Exception as err:
             st.warning("⚠️ Unable to parse AI response for Go/No-Go logic.")
-
-        st.markdown(f"```json\n{result}\n```")
-
+            st.markdown(f"```json\n{result}\n```)"
+)
     except Exception as e:
         st.error(f"Something went wrong: {e}")

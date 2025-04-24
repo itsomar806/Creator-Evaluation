@@ -105,14 +105,14 @@ if st.session_state.audit_triggered and url:
                 "Median CVR (0.35%)": 0.0035,
                 "Best Case CVR (0.50%)": 0.005
             }
-            selected_label = st.selectbox("🎯 Select a CPV Scenario", options=list(cpv_options.keys()))
+            selected_label = st.selectbox("🌟 Select a CPV Scenario", options=list(cpv_options.keys()))
             target_cpv = cpv_options[selected_label]
             recommended_price = round(avg_views * target_cpv)
 
             st.markdown(f"**Target CPV:** ${target_cpv:.4f}")
             st.markdown(f"**Recommended Cost per Video:** ${recommended_price:,}")
 
-        # Go/No-Go Framework
+        # Brand Safety + HEART Evaluation
         titles_and_descriptions = "\n".join([
             f"Title: {v['title']}\nDescription: {v.get('description', 'No description')}"
             for v in videos[:30]
@@ -172,13 +172,13 @@ Return the result in this format:
                 for k, v in heart.items()
             ]) + "</ul>", unsafe_allow_html=True)
 
-            st.markdown(f"#### 🚩 Risk Score: {risk_score}/10")
-            st.markdown(f"#### ⚠️ Flags: {', '.join(risk_flags) if risk_flags else 'None'}")
+            st.markdown(f"#### ⚠️ Risk Score: {risk_score}/10")
+            st.markdown(f"#### 🚩 Flags: {', '.join(risk_flags) if risk_flags else 'None'}")
             st.markdown(f"#### 📝 Summary: {summary}")
 
         except Exception as err:
             st.warning("⚠️ Unable to parse AI response for Go/No-Go logic.")
-            st.markdown(f"```json\n{result}\n```)"
-)
+            st.markdown(f"```json\n{result}\n```)")
+
     except Exception as e:
         st.error(f"Something went wrong: {e}")

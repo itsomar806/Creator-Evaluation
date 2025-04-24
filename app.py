@@ -9,6 +9,8 @@ from urllib.parse import urlparse, parse_qs
 from serpapi import GoogleSearch
 import googleapiclient.discovery
 from openai import OpenAI
+from dotenv import load_dotenv
+load_dotenv()
 
 # --- UTIL FUNCTIONS (inline instead of dashboard.py) ---
 def extract_channel_id_from_url(url):
@@ -25,7 +27,7 @@ def extract_channel_id_from_url(url):
     return url
 
 def get_channel_metadata(channel_identifier):
-    YOUTUBE_API_KEY = st.secrets['youtube']['api_key']
+    YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
     youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
 
     if not channel_identifier.startswith("UC"):
@@ -76,9 +78,9 @@ def calculate_average_views(videos):
 
 def get_brand_safety_assessment(query):
     ai_response = ""  # fallback initialization
-    openai_api_key = st.secrets["openai"]["api_key"] if "openai" in st.secrets else os.getenv("OPENAI_API_KEY")
+    openai_api_key = os.getenv("OPENAI_API_KEY")
     client = OpenAI(api_key=openai_api_key)
-    search = GoogleSearch({"q": query, "api_key": st.secrets["serpapi"]["api_key"]})
+    search = GoogleSearch({"q": query, "api_key": os.getenv("SERPAPI_API_KEY")})
     results = search.get_dict().get("organic_results", [])
     summary = "\n\n".join([f"- {r.get('title')}\n{r.get('snippet')}\n{r.get('link')}" for r in results])
 

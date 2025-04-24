@@ -3,6 +3,7 @@ import pandas as pd
 import altair as alt
 import openai
 import os
+from openai import OpenAI
 from dashboard import (
     extract_channel_id_from_url,
     get_channel_metadata,
@@ -11,10 +12,11 @@ from dashboard import (
 )
 
 # Set your OpenAI key securely
-openai.api_key = st.secrets["openai"]["api_key"] if "openai" in st.secrets else os.getenv("OPENAI_API_KEY")
+openai_api_key = st.secrets["openai"]["api_key"] if "openai" in st.secrets else os.getenv("OPENAI_API_KEY")
+client = OpenAI(api_key=openai_api_key)
 
 # Set page config FIRST
-st.set_page_config(page_title="YouTube Creator Evaluation", layout="wide")
+st.set_page_config(page_title="YouTube Creator Audit", layout="wide")
 
 # Custom styling using HubSpot Media branding
 st.markdown("""
@@ -53,7 +55,7 @@ input[type="text"] {
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h2 style='text-align: center; color: #213343;'>HubSpot Creator Evaluation</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center; color: #FFCD78;'>HubSpot Creator Audit</h2>", unsafe_allow_html=True)
 
 if "audit_triggered" not in st.session_state:
     st.session_state.audit_triggered = False
@@ -98,20 +100,15 @@ Return the result in this format:
   "summary": "Short explanation of the rating"
 }}
 """
-        from openai import OpenAI
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a brand risk assessment expert for influencer marketing."},
+                {"role": "user", "content": prompt}
+            ]
+        )
 
-client = OpenAI(api_key=openai.api_key)
-
-chat_response = client.chat.completions.create(
-    model="gpt-4",
-    messages=[
-        {"role": "system", "content": "You are a brand risk assessment expert for influencer marketing."},
-        {"role": "user", "content": prompt}
-    ]
-)
-
-result = chat_response.choices[0].message.content
-
+        result = response.choices[0].message.content
         st.markdown("---")
         st.subheader("🚨 Brand Safety & HEART Assessment")
         import json
@@ -132,7 +129,7 @@ result = chat_response.choices[0].message.content
         except Exception as err:
             st.warning("⚠️ Unable to parse AI response for Go/No-Go logic.")
 
-        st.markdown(f"```json\n{result}\n```")
+        st.markdown(f"```json\n{result}\n```)\n")
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")

@@ -23,7 +23,24 @@ def get_transcript_text(video_id):
         return "Transcript unavailable"
 
 openai_api_key = st.secrets["openai"]["api_key"] if "openai" in st.secrets else os.getenv("OPENAI_API_KEY")
+import openai
+from openai import OpenAI
+
+# Load API key from Streamlit secrets or environment variable
+openai_api_key = (
+    st.secrets["openai"]["api_key"]
+    if "openai" in st.secrets and "api_key" in st.secrets["openai"]
+    else os.getenv("OPENAI_API_KEY")
+)
+
+# Error if missing
+if not openai_api_key:
+    st.error("❌ OpenAI API key not found. Please add it to .streamlit/secrets.toml or set OPENAI_API_KEY in your environment.")
+    st.stop()
+
+# Initialize the OpenAI client properly
 client = OpenAI(api_key=openai_api_key)
+
 
 if not openai_api_key:
     st.error("❌ OpenAI API key not found. Please add it to .streamlit/secrets.toml or your environment.")

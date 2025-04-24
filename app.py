@@ -46,12 +46,11 @@ def get_channel_metadata(channel_identifier):
     channel = items[0]
     return {
         "title": channel['snippet']['title'],
-        "handle": channel_id,
+        "handle": channel_identifier,
         "id": channel['id'],
         "subs": int(channel['statistics'].get('subscriberCount', 0)),
         "country": channel['snippet'].get('country', 'Unknown')
     }
-
 def get_recent_videos(channel_id, max_results=30):
     YOUTUBE_API_KEY = st.secrets['youtube']['api_key']
     youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=YOUTUBE_API_KEY)

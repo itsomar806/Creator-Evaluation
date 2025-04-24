@@ -75,9 +75,7 @@ if st.session_state.audit_triggered and url:
             comments = video["comments"]
             video["engagement_rate"] = round(((likes + comments) / views) * 100, 2) if views > 0 else 0
 
-        titles_and_descriptions = "
-".join([f"Title: {v['title']}
-Description: {v['description']}" for v in videos[:30]])
+        titles_and_descriptions = "\n".join([f"Title: {v['title']}\nDescription: {v['description']}" for v in videos[:30]])
         prompt = f"""
 Analyze the following YouTube videos for brand risk and HEART value alignment:
 
@@ -122,14 +120,11 @@ Return the result in this format:
             else:
                 go_status = "🔴 NO-GO - High risk or poor HEART alignment"
 
-            st.markdown(f"### ✅ Go/No-Go Recommendation
-**{go_status}**")
+            st.markdown(f"### ✅ Go/No-Go Recommendation\n**{go_status}**")
         except Exception as err:
             st.warning("⚠️ Unable to parse AI response for Go/No-Go logic.")
 
-        st.markdown(f"```json
-{result}
-```")
+        st.markdown(f"```json\n{result}\n```")
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")

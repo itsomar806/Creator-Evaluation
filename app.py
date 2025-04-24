@@ -3,6 +3,8 @@ import pandas as pd
 import altair as alt
 import openai
 import os
+import json
+import re
 from openai import OpenAI
 from dashboard import (
     extract_channel_id_from_url,
@@ -16,6 +18,7 @@ client = OpenAI(api_key=openai_api_key)
 
 st.set_page_config(page_title="YouTube Creator Audit", layout="wide")
 
+# --- STYLING ---
 st.markdown("""
 <style>
 body {
@@ -27,12 +30,6 @@ body {
     padding-top: 2rem;
 }
 #MainMenu, header, footer {visibility: hidden;}
-input[type="text"] {
-    text-align: center;
-    font-size: 1.2rem;
-    border-radius: 8px;
-    padding: 0.5rem;
-}
 .video-table table {
     width: 100%;
     border-collapse: collapse;
@@ -76,6 +73,7 @@ if st.session_state.audit_triggered and url:
 
         avg_views = calculate_average_views(videos)
 
+        # CREATOR OVERVIEW
         st.subheader("📌 Creator Overview")
         col1, col2 = st.columns(2)
         with col1:
@@ -87,6 +85,7 @@ if st.session_state.audit_triggered and url:
             st.markdown(f"**👥 Subscribers:** {metadata['subs']:,}")
             st.markdown(f"[🔗 View Channel](https://www.youtube.com/channel/{metadata['id']})")
 
+        # TOPIC CLUSTERS
         topic_keywords = {
             "Marketing": ["marketing", "brand", "ads", "advertising", "promotion"],
             "Sales": ["sales", "sell", "pitch", "close"],
@@ -102,25 +101,29 @@ if st.session_state.audit_triggered and url:
         topic_counts = {key: 0 for key in topic_keywords}
         for video in videos:
             title = video["title"].lower()
-            matched = False
             for category, keywords in topic_keywords.items():
                 if any(kw in title for kw in keywords):
                     topic_counts[category] += 1
-                    matched = True
                     break
 
-        sorted_topics = [item[0] for item in sorted(topic_counts.items(), key=lambda x: (-x[1], x[0])) if item[1] > 0]
-        topic_summary = ", ".join(sorted_topics) if sorted_topics else "No editorial fit."
+        sorted_topics = [t for t, c in sorted(topic_counts.items(), key=lambda x: (-x[1], x[0])) if c > 0]
+        if sorted_topics:
+            st.markdown(f"**🧠 Topic Clusters (based on recent videos):** {', '.join(sorted_topics)}")
+        else:
+            st.markdown("""
+            <div style="background-color:#fff4f4; border-left: 4px solid #e74c3c; padding: 1rem; border-radius: 6px;">
+                <strong>🧠 Topic Clusters (based on recent videos):</strong><br>
+                <span style="color:#e74c3c;">No editorial fit.</span>
+            </div>
+            """, unsafe_allow_html=True)
 
-        st.markdown(f"**🧠 Topic Clusters (based on recent videos):** {topic_summary}")
-        st.markdown("---")
-
+        # GROWTH CHART
+        st.subheader("📈 Growth Over Time (by Views)")
         views_df = pd.DataFrame(videos)
         views_df["published"] = pd.to_datetime(views_df["published"])
         views_df = views_df.sort_values(by="published", ascending=True).reset_index(drop=True)
         views_df["label"] = views_df["published"].dt.strftime("%b %d")
 
-        st.subheader("📈 Growth Over Time (by Views)")
         chart = alt.Chart(views_df).mark_bar().encode(
             x=alt.X("label:N", sort=None, title="Publish Date"),
             y=alt.Y("views:Q", title="Views"),
@@ -128,6 +131,7 @@ if st.session_state.audit_triggered and url:
         ).properties(height=400)
         st.altair_chart(chart, use_container_width=True)
 
+        # TOP VIDEOS
         st.subheader("🔥 Top 10 Performing Videos")
         df = pd.DataFrame(videos)
         top_videos = df.sort_values(by="views", ascending=False).head(10).reset_index(drop=True)
@@ -137,6 +141,7 @@ if st.session_state.audit_triggered and url:
         top_videos_display.columns = ["🎬 Title", "👁️ Views", "👍 Likes", "💬 Comments"]
         st.markdown("<div class='video-table'>" + top_videos_display.to_html(escape=False, index=False) + "</div>", unsafe_allow_html=True)
 
+        # SPONSORSHIP CALCULATOR
         st.markdown("---")
         st.subheader("📊 Sponsorship Calculator")
         col1, col2 = st.columns(2)
@@ -154,43 +159,49 @@ if st.session_state.audit_triggered and url:
             st.markdown(f"**Target CPV:** ${target_cpv:.4f}")
             st.markdown(f"**Recommended Cost per Video:** ${recommended_price:,}")
 
+        # BRAND SAFETY & HEART ASSESSMENT
+        st.markdown("---")
+        st.subheader("🚨 Brand Safety & HEART Assessment")
+
         titles_and_descriptions = "\n".join([
             f"Title: {v['title']}\nDescription: {v.get('description', 'No description')}"
             for v in videos[:30]
         ])
+
         prompt = f"""
-Analyze the following YouTube videos for brand risk and HEART value alignment:
+Analyze the following YouTube content and return a JSON object only (no commentary or markdown):
 
-{titles_and_descriptions}
-
-Return the result in this format:
 {{
-  "brand_risk_score": <1-10>,
-  "risk_flags": ["flag1", "flag2"],
+  "brand_risk_score": 1-10,
+  "risk_flags": ["list of risk flags"],
   "heart_values": {{
-    "Humble": "Yes/No",
-    "Empathetic": "Yes/No",
-    "Adaptable": "Yes/No",
-    "Remarkable": "Yes/No",
-    "Transparent": "Yes/No"
+    "Humble": "Yes" or "No",
+    "Empathetic": "Yes" or "No",
+    "Adaptable": "Yes" or "No",
+    "Remarkable": "Yes" or "No",
+    "Transparent": "Yes" or "No"
   }},
-  "summary": "Short explanation of the rating"
+  "summary": "Brief summary (1-2 sentences) of content risks and HEART alignment"
 }}
-"""
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a brand risk assessment expert for influencer marketing."},
-                {"role": "user", "content": prompt}
-            ]
-        )
 
-        result = response.choices[0].message.content
-        st.markdown("---")
-        st.subheader("🚨 Brand Safety & HEART Assessment")
-        import json
+Content:
+{titles_and_descriptions}
+"""
+
         try:
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are a brand risk assessment expert for influencer marketing."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+
+            raw_result = response.choices[0].message.content.strip()
+            json_match = re.search(r"\{.*\}", raw_result, re.DOTALL)
+            result = json_match.group(0) if json_match else raw_result
             parsed_result = json.loads(result)
+
             heart = parsed_result.get("heart_values", {})
             risk_score = parsed_result.get("brand_risk_score", 10)
             risk_flags = parsed_result.get("risk_flags", [])
@@ -205,12 +216,9 @@ Return the result in this format:
                 go_status = "🔴 NO-GO - High risk or poor HEART alignment"
 
             st.markdown(f"### ✅ Go/No-Go Recommendation\n**{go_status}**")
-            st.markdown(f"#### 🧠 HEART Value Checks")
-            st.markdown("""
-            <ul style='list-style-type: none; padding-left: 0;'>
-            """ + "\n".join([
-                f"<li><strong>{k}</strong>: {'✅' if v == 'Yes' else '❌'} {v}</li>"
-                for k, v in heart.items()
+            st.markdown("#### 🧠 HEART Value Checks")
+            st.markdown("<ul style='list-style-type:none;padding-left:0;'>" + "\n".join([
+                f"<li><strong>{k}</strong>: {'✅' if v == 'Yes' else '❌'} {v}</li>" for k, v in heart.items()
             ]) + "</ul>", unsafe_allow_html=True)
 
             st.markdown(f"#### ⚠️ Risk Score: {risk_score}/10")
@@ -219,7 +227,7 @@ Return the result in this format:
 
         except Exception as err:
             st.warning("⚠️ Unable to parse AI response for Go/No-Go logic.")
-            st.markdown(f"<pre style='background:#f6f6f6;padding:1rem;border-radius:6px;font-size:13px;'>{result}</pre>", unsafe_allow_html=True)
+            st.markdown(f"<pre style='background:#f6f6f6;padding:1rem;border-radius:6px;font-size:13px;'>{raw_result}</pre>", unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")

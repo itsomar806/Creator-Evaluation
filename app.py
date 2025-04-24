@@ -11,7 +11,7 @@ import collections
 import re
 
 # Set page config FIRST
-st.set_page_config(page_title="YouTube Creator Audit", layout="wide")
+st.set_page_config(page_title="YouTube Creator Evaluation", layout="wide")
 
 # Custom styling using HubSpot Media branding
 st.markdown("""
@@ -35,7 +35,7 @@ input[type="text"] {
 """, unsafe_allow_html=True)
 
 # Center the logo and input
-st.markdown("<h2 style='text-align: center; color: #FFCD78;'>HubSpot Creator Audit</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center; color: #213343;'>HubSpot Creator Evaluation</h2>", unsafe_allow_html=True)
 
 # Handle session state for rerun persistence
 if "audit_triggered" not in st.session_state:

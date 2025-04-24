@@ -30,7 +30,7 @@ def get_channel_metadata(channel_identifier):
     YOUTUBE_API_KEY = st.secrets['youtube']['api_key']
     youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
 
-    # Step 1: Use search API to get the real channel ID from handle
+    # Step 1: If input is not a full channel ID (starts with 'UC'), resolve using search
     if not channel_identifier.startswith("UC"):
         search_resp = youtube.search().list(part="snippet", q=channel_identifier, type="channel", maxResults=1).execute()
         items = search_resp.get("items", [])
@@ -38,22 +38,19 @@ def get_channel_metadata(channel_identifier):
             raise ValueError("Channel not found via search.")
         channel_identifier = items[0]["snippet"]["channelId"]
 
-    # Step 2: Use channel ID to get metadata
     request = youtube.channels().list(part="snippet,statistics", id=channel_identifier)
     response = request.execute()
     items = response.get("items", [])
     if not items:
         raise ValueError("Channel not found. Please check the URL or handle.")
-
     channel = items[0]
     return {
         "title": channel['snippet']['title'],
-        "handle": channel['snippet']['customUrl'] if 'customUrl' in channel['snippet'] else channel_identifier,
+        "handle": channel_id,
         "id": channel['id'],
         "subs": int(channel['statistics'].get('subscriberCount', 0)),
         "country": channel['snippet'].get('country', 'Unknown')
     }
-
 
 def get_recent_videos(channel_id, max_results=30):
     YOUTUBE_API_KEY = st.secrets['youtube']['api_key']

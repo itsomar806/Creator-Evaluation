@@ -14,7 +14,7 @@ from dashboard import (
 openai.api_key = st.secrets["openai"]["api_key"] if "openai" in st.secrets else os.getenv("OPENAI_API_KEY")
 
 # Set page config FIRST
-st.set_page_config(page_title="YouTube Creator Audit", layout="wide")
+st.set_page_config(page_title="YouTube Creator Evaluation", layout="wide")
 
 # Custom styling using HubSpot Media branding
 st.markdown("""
@@ -53,7 +53,7 @@ input[type="text"] {
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h2 style='text-align: center; color: #FFCD78;'>HubSpot Creator Audit</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='text-align: center; color: #213343;'>HubSpot Creator Evaluation</h2>", unsafe_allow_html=True)
 
 if "audit_triggered" not in st.session_state:
     st.session_state.audit_triggered = False
@@ -75,7 +75,10 @@ if st.session_state.audit_triggered and url:
             comments = video["comments"]
             video["engagement_rate"] = round(((likes + comments) / views) * 100, 2) if views > 0 else 0
 
-        titles_and_descriptions = "\n".join([f"Title: {v['title']}\nDescription: {v['description']}" for v in videos[:30]])
+        titles_and_descriptions = "\n".join([
+            f"Title: {v['title']}\nDescription: {v.get('description', 'No description')}"
+            for v in videos[:30]
+        ])
         prompt = f"""
 Analyze the following YouTube videos for brand risk and HEART value alignment:
 

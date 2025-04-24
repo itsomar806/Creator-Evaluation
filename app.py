@@ -102,7 +102,7 @@ You're assessing a YouTube creator for brand partnership risk. Based on the foll
 Search results:
 {summary}
 """
-    client = openai.Client()
+    client = openai.OpenAI(api_key=openai_api_key)
     response = client.chat.completions.create(
         model="gpt-4",
         messages=[

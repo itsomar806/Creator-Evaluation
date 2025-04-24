@@ -120,16 +120,16 @@ st.title("🔍 YouTube Creator Audit")
 # OpenAI key test button
 if st.button("🧪 Test OpenAI Key"):
     openai_api_key = os.getenv("OPENAI_API_KEY")
-    if not test_key:
-        st.error("❌ OPENAI_API_KEY not found in environment.")
-    else:
-        try:
-            openai.api_key = test_key
-            client = openai.Client(api_key=openai_api_key)
-            response = client.chat.completions.create(...)
-            st.success("✅ OpenAI key is valid and working.")
-        except Exception as err:
-            st.error(f"❌ OpenAI key test failed: {err}")
+        if not test_key:
+            st.error("❌ OPENAI_API_KEY not found in environment.")
+        else:
+            try:
+                openai.api_key = test_key
+                client = openai.Client(api_key=openai_api_key)
+                response = client.chat.completions.create(...)
+                st.success("✅ OpenAI key is valid and working.")
+            except Exception as err:
+                st.error(f"❌ OpenAI key test failed: {err}")
 
 if "audit_triggered" not in st.session_state:
     st.session_state.audit_triggered = False

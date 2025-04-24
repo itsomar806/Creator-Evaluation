@@ -11,14 +11,11 @@ from dashboard import (
     calculate_average_views
 )
 
-# Set your OpenAI key securely
 openai_api_key = st.secrets["openai"]["api_key"] if "openai" in st.secrets else os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=openai_api_key)
 
-# Set page config FIRST
 st.set_page_config(page_title="YouTube Creator Audit", layout="wide")
 
-# Custom styling using HubSpot Media branding
 st.markdown("""
 <style>
 body {
@@ -79,7 +76,6 @@ if st.session_state.audit_triggered and url:
 
         avg_views = calculate_average_views(videos)
 
-        # Creator Overview
         st.subheader("📌 Creator Overview")
         col1, col2 = st.columns(2)
         with col1:
@@ -91,14 +87,65 @@ if st.session_state.audit_triggered and url:
             st.markdown(f"**👥 Subscribers:** {metadata['subs']:,}")
             st.markdown(f"[🔗 View Channel](https://www.youtube.com/channel/{metadata['id']})")
 
+        # Topic Classification
+        topic_keywords = {
+            "Marketing": ["marketing", "brand", "ads", "advertising", "promotion"],
+            "Sales": ["sales", "sell", "pitch", "close"],
+            "Entrepreneurship / Business": ["startup", "founder", "entrepreneur", "business", "revenue", "profit"],
+            "AI": ["ai", "artificial", "intelligence", "chatgpt", "machine learning"],
+            "Skill Development": ["learn", "course", "skills", "habits", "productivity", "growth"],
+            "Web Development": ["developer", "web", "html", "css", "javascript", "react"],
+            "Operations": ["ops", "operations", "process", "workflow"],
+            "Customer Success": ["customer", "support", "success", "retention"],
+            "Tech": ["tech", "technology", "software", "tools"]
+        }
+
+        topic_counts = {key: 0 for key in topic_keywords}
+        for video in videos:
+            title = video["title"].lower()
+            matched = False
+            for category, keywords in topic_keywords.items():
+                if any(kw in title for kw in keywords):
+                    topic_counts[category] += 1
+                    matched = True
+                    break
+
+        sorted_topics = [item[0] for item in sorted(topic_counts.items(), key=lambda x: (-x[1], x[0])) if item[1] > 0]
+        topic_summary = ", ".join(sorted_topics) if sorted_topics else "No editorial fit."
+
+        st.markdown(f"**🧠 Topic Clusters (based on recent videos):** {topic_summary}")
+        st.markdown("---")
+
+        # Growth Chart
+        views_df = pd.DataFrame(videos)
+        views_df["published"] = pd.to_datetime(views_df["published"])
+        views_df = views_df.sort_values(by="published", ascending=True).reset_index(drop=True)
+        views_df["label"] = views_df["published"].dt.strftime("%b %d")
+
+        st.subheader("📈 Growth Over Time (by Views)")
+        chart = alt.Chart(views_df).mark_bar().encode(
+            x=alt.X("label:N", sort=None, title="Publish Date"),
+            y=alt.Y("views:Q", title="Views"),
+            tooltip=["label", "views", "title"]
+        ).properties(height=400)
+        st.altair_chart(chart, use_container_width=True)
+
+        # Top 10 Performing Videos
+        st.subheader("🔥 Top 10 Performing Videos")
+        df = pd.DataFrame(videos)
+        top_videos = df.sort_values(by="views", ascending=False).head(10).reset_index(drop=True)
+        top_videos["video_url"] = top_videos["video_id"].apply(lambda x: f"https://www.youtube.com/watch?v={x}")
+        top_videos["title"] = top_videos.apply(lambda row: f'<a href="{row.video_url}" target="_blank">{row.title}</a>', axis=1)
+        top_videos_display = top_videos[["title", "views", "likes", "comments"]]
+        top_videos_display.columns = ["🎬 Title", "👁️ Views", "👍 Likes", "💬 Comments"]
+        st.markdown("<div class='video-table'>" + top_videos_display.to_html(escape=False, index=False) + "</div>", unsafe_allow_html=True)
+
         # Sponsorship Calculator
         st.markdown("---")
         st.subheader("📊 Sponsorship Calculator")
         col1, col2 = st.columns(2)
-
         with col1:
             st.markdown(f"**📈 Average Views (last 30 videos):** {avg_views:,}")
-
         with col2:
             cpv_options = {
                 "Conservative CVR (0.30%)": 0.003,
@@ -108,7 +155,6 @@ if st.session_state.audit_triggered and url:
             selected_label = st.selectbox("🌟 Select a CPV Scenario", options=list(cpv_options.keys()))
             target_cpv = cpv_options[selected_label]
             recommended_price = round(avg_views * target_cpv)
-
             st.markdown(f"**Target CPV:** ${target_cpv:.4f}")
             st.markdown(f"**Recommended Cost per Video:** ${recommended_price:,}")
 
@@ -178,7 +224,7 @@ Return the result in this format:
 
         except Exception as err:
             st.warning("⚠️ Unable to parse AI response for Go/No-Go logic.")
-            st.markdown(f"```json\n{result}\n```)")
+            st.markdown(f"```json\n{result}\n```)\n")
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")

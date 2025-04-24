@@ -14,6 +14,7 @@ from dashboard import (
     calculate_average_views
 )
 
+# --- Web presence scan via SerpAPI ---
 def search_web_presence(query, serpapi_key):
     search = GoogleSearch({
         "q": query,
@@ -31,13 +32,14 @@ def search_web_presence(query, serpapi_key):
 
     return output.strip()
 
+# --- Keys ---
 openai_api_key = st.secrets["openai"]["api_key"] if "openai" in st.secrets else os.getenv("OPENAI_API_KEY")
 serpapi_key = st.secrets["serpapi"]["api_key"] if "serpapi" in st.secrets else os.getenv("SERPAPI_API_KEY")
-
 client = OpenAI(api_key=openai_api_key)
 
 st.set_page_config(page_title="YouTube Creator Audit", layout="wide")
 
+# --- Styling ---
 st.markdown("""
 <style>
 body {
@@ -98,6 +100,7 @@ if st.session_state.audit_triggered and url:
 
         avg_views = calculate_average_views(videos)
 
+        # --- Creator Overview ---
         st.subheader("📌 Creator Overview")
         col1, col2 = st.columns(2)
         with col1:
@@ -109,6 +112,31 @@ if st.session_state.audit_triggered and url:
             st.markdown(f"**👥 Subscribers:** {metadata['subs']:,}")
             st.markdown(f"[🔗 View Channel](https://www.youtube.com/channel/{metadata['id']})")
 
+        # --- Sponsorship Calculator ---
+        st.markdown("---")
+        st.subheader("📊 Sponsorship Calculator")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"""
+            <div style='background-color:#f9f9f9; padding: 1.2rem; border-radius: 10px; border: 1px solid #ccc; text-align: center;'>
+                <span style='font-size: 1.2rem;'>💡 <strong>Average Views (last 30 videos):</strong></span>
+                <div style='font-size: 1.8rem; color: #FFCD78; font-weight: bold;'>{avg_views:,}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with col2:
+            cpv_options = {
+                "Conservative CVR (0.30%)": 0.003,
+                "Median CVR (0.35%)": 0.0035,
+                "Best Case CVR (0.50%)": 0.005
+            }
+            selected_label = st.selectbox("🌟 Select a CPV Scenario", options=list(cpv_options.keys()))
+            target_cpv = cpv_options[selected_label]
+            recommended_price = round(avg_views * target_cpv)
+            st.markdown(f"**Target CPV:** ${target_cpv:.4f}")
+            st.markdown(f"**Recommended Cost per Video:** ${recommended_price:,}")
+
+        # --- Topic Clusters ---
+        st.markdown("---")
         topic_keywords = {
             "Marketing": ["marketing", "brand", "ads", "advertising", "promotion"],
             "Sales": ["sales", "sell", "pitch", "close"],
@@ -129,17 +157,24 @@ if st.session_state.audit_triggered and url:
                     topic_counts[category] += 1
                     break
 
-        sorted_topics = [item[0] for item in sorted(topic_counts.items(), key=lambda x: (-x[1], x[0])) if item[1] > 0]
-        topic_summary = ", ".join(sorted_topics) if sorted_topics else "No editorial fit."
-        st.markdown(f"**🧠 Topic Clusters (based on recent videos):** {topic_summary}")
-        st.markdown("---")
+        sorted_topics = [t for t, c in topic_counts.items() if c > 0]
+        if sorted_topics:
+            st.markdown(f"**🧠 Topic Clusters (based on recent videos):** {', '.join(sorted_topics)}")
+        else:
+            st.markdown("""
+            <div style="background-color:#fff4f4; border-left: 4px solid #e74c3c; padding: 1rem; border-radius: 6px;">
+                <strong>🧠 Topic Clusters:</strong><br>
+                <span style="color:#e74c3c;">No editorial fit.</span>
+            </div>
+            """, unsafe_allow_html=True)
 
+        # --- Growth Over Time ---
+        st.subheader("📈 Growth Over Time (by Views)")
         views_df = pd.DataFrame(videos)
         views_df["published"] = pd.to_datetime(views_df["published"])
         views_df = views_df.sort_values(by="published", ascending=True).reset_index(drop=True)
         views_df["label"] = views_df["published"].dt.strftime("%b %d")
 
-        st.subheader("📈 Growth Over Time (by Views)")
         chart = alt.Chart(views_df).mark_bar().encode(
             x=alt.X("label:N", sort=None, title="Publish Date"),
             y=alt.Y("views:Q", title="Views"),
@@ -147,6 +182,7 @@ if st.session_state.audit_triggered and url:
         ).properties(height=400)
         st.altair_chart(chart, use_container_width=True)
 
+        # --- Top 10 Videos Table ---
         st.subheader("🔥 Top 10 Performing Videos")
         df = pd.DataFrame(videos)
         top_videos = df.sort_values(by="views", ascending=False).head(10).reset_index(drop=True)
@@ -156,38 +192,16 @@ if st.session_state.audit_triggered and url:
         top_videos_display.columns = ["🎬 Title", "👁️ Views", "👍 Likes", "💬 Comments"]
         st.markdown("<div class='video-table'>" + top_videos_display.to_html(escape=False, index=False) + "</div>", unsafe_allow_html=True)
 
-        st.markdown("---")
-        st.subheader("📊 Sponsorship Calculator")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(f"**📈 Average Views (last 30 videos):** {avg_views:,}")
-        with col2:
-            cpv_options = {
-                "Conservative CVR (0.30%)": 0.003,
-                "Median CVR (0.35%)": 0.0035,
-                "Best Case CVR (0.50%)": 0.005
-            }
-            selected_label = st.selectbox("🌟 Select a CPV Scenario", options=list(cpv_options.keys()))
-            target_cpv = cpv_options[selected_label]
-            recommended_price = round(avg_views * target_cpv)
-            st.markdown(f"**Target CPV:** ${target_cpv:.4f}")
-            st.markdown(f"**Recommended Cost per Video:** ${recommended_price:,}")
-
+        # --- Brand Safety & HEART Assessment ---
         st.markdown("---")
         st.subheader("🚨 Brand Safety & HEART Assessment")
-
         query = f"{metadata['title']} {metadata['handle']} site:twitter.com OR site:linkedin.com OR site:reddit.com"
         web_summary = search_web_presence(query, serpapi_key)
 
         prompt = f"""
-You're assessing a YouTube creator for brand partnership risk. Below is a summary of their online presence across news articles, Reddit, and blogs.
+You're assessing a YouTube creator for brand partnership risk. Below is a summary of their online presence.
 
-Evaluate based on:
-- Brand safety risks (language, controversy, backlash)
-- Professional behavior
-- HEART values (Humble, Empathetic, Adaptable, Remarkable, Transparent)
-
-Return your response in this JSON format:
+Return your response as JSON:
 {{
   "brand_risk_score": 1-10,
   "risk_flags": ["list of concern tags"],
@@ -198,55 +212,37 @@ Return your response in this JSON format:
     "Remarkable": "Yes/No",
     "Transparent": "Yes/No"
   }},
-  "summary": "Brief summary (1-2 sentences) of brand safety and HEART alignment"
+  "summary": "Brief summary"
 }}
 
-Online presence summary:
+Online presence:
 {web_summary}
 """
 
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are a brand risk assessment expert for influencer marketing."},
+                {"role": "system", "content": "You are a brand safety analyst."},
                 {"role": "user", "content": prompt}
             ]
         )
 
         result = response.choices[0].message.content
-
         try:
             json_text = re.search(r"\{.*\}", result, re.DOTALL).group()
             parsed_result = json.loads(json_text)
-            heart = parsed_result.get("heart_values", {})
-            risk_score = parsed_result.get("brand_risk_score", 10)
-            risk_flags = parsed_result.get("risk_flags", [])
-            summary = parsed_result.get("summary", "")
-            yes_count = list(heart.values()).count("Yes")
+            heart = parsed_result["heart_values"]
+            score = parsed_result["brand_risk_score"]
+            summary = parsed_result["summary"]
+            flags = ", ".join(parsed_result.get("risk_flags", []))
 
-            if risk_score <= 3 and yes_count >= 4:
-                go_status = "🟢 GO - Strong brand alignment and low risk"
-            elif risk_score <= 6 and yes_count >= 3:
-                go_status = "🟡 CAUTION - Moderate risk or values alignment; requires mitigation"
-            else:
-                go_status = "🔴 NO-GO - High risk or poor HEART alignment"
-
-            st.markdown(f"### ✅ Go/No-Go Recommendation\n**{go_status}**")
-            st.markdown("#### 🧠 HEART Value Checks")
-            st.markdown("""
-            <ul style='list-style-type: none; padding-left: 0;'>
-            """ + "\n".join([
-                f"<li><strong>{k}</strong>: {'✅' if v == 'Yes' else '❌'} {v}</li>"
-                for k, v in heart.items()
-            ]) + "</ul>", unsafe_allow_html=True)
-
-            st.markdown(f"#### ⚠️ Risk Score: {risk_score}/10")
-            st.markdown(f"#### 🚩 Flags: {', '.join(risk_flags) if risk_flags else 'None'}")
-            st.markdown(f"#### 📝 Summary: {summary}")
-
-        except Exception:
-            st.warning("⚠️ Unable to parse AI response for Go/No-Go logic.")
-            st.markdown(f"<pre style='background:#f6f6f6;padding:1rem;border-radius:6px;font-size:13px;'>{result}</pre>", unsafe_allow_html=True)
+            st.markdown(f"**Go/No-Go Score:** {score}/10")
+            st.markdown(f"**HEART:** " + ", ".join([f"{k}: {v}" for k, v in heart.items()]))
+            st.markdown(f"**Summary:** {summary}")
+            st.markdown(f"**Flags:** {flags or 'None'}")
+        except:
+            st.warning("⚠️ Unable to parse AI response.")
+            st.text(result)
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")

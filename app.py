@@ -125,7 +125,8 @@ if st.button("🧪 Test OpenAI Key"):
     else:
         try:
             openai.api_key = test_key
-            response = openai.Model.list()
+            client = openai.Client(api_key=test_key)
+            response = client.models.list()
             st.success("✅ OpenAI key is valid and working.")
         except Exception as err:
             st.error(f"❌ OpenAI key test failed: {err}")

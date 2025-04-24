@@ -102,8 +102,8 @@ You're assessing a YouTube creator for brand partnership risk. Based on the foll
 Search results:
 {summary}
 """
-    client = openai.OpenAI(api_key=openai_api_key)
-    response = client.chat.completions.create(
+    openai.api_key = openai_api_key
+    response = openai.ChatCompletion.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": "You are a brand safety analyst."},
@@ -124,8 +124,8 @@ if st.button("🧪 Test OpenAI Key"):
         st.error("❌ OPENAI_API_KEY not found in environment.")
     else:
         try:
-            test_client = openai.OpenAI(api_key=test_key)
-            response = test_client.models.list()
+            openai.api_key = test_key
+            response = openai.Model.list()
             st.success("✅ OpenAI key is valid and working.")
         except Exception as err:
             st.error(f"❌ OpenAI key test failed: {err}")

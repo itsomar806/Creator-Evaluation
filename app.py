@@ -11,8 +11,6 @@ import googleapiclient.discovery
 from openai import OpenAI
 
 # --- UTIL FUNCTIONS (inline instead of dashboard.py) ---
-# UTILITIES
-
 def extract_channel_id_from_url(url):
     if '@' in url:
         return url.strip().split('/')[-1].replace('@', '')
@@ -30,7 +28,6 @@ def get_channel_metadata(channel_identifier):
     YOUTUBE_API_KEY = st.secrets['youtube']['api_key']
     youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
 
-    # Step 1: If input is not a full channel ID (starts with 'UC'), resolve using search
     if not channel_identifier.startswith("UC"):
         search_resp = youtube.search().list(part="snippet", q=channel_identifier, type="channel", maxResults=1).execute()
         items = search_resp.get("items", [])
@@ -51,6 +48,7 @@ def get_channel_metadata(channel_identifier):
         "subs": int(channel['statistics'].get('subscriberCount', 0)),
         "country": channel['snippet'].get('country', 'Unknown')
     }
+
 def get_recent_videos(channel_id, max_results=30):
     YOUTUBE_API_KEY = st.secrets['youtube']['api_key']
     youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
@@ -77,11 +75,12 @@ def calculate_average_views(videos):
     return round(sum(v["views"] for v in videos) / len(videos))
 
 def get_brand_safety_assessment(query):
+    ai_response = ""  # fallback initialization
     openai_api_key = st.secrets["openai"]["api_key"] if "openai" in st.secrets else os.getenv("OPENAI_API_KEY")
     client = OpenAI(api_key=openai_api_key)
     search = GoogleSearch({"q": query, "api_key": st.secrets["serpapi"]["api_key"]})
     results = search.get_dict().get("organic_results", [])
-    summary = "".join([f"- {r.get('title')}{r.get('snippet')}{r.get('link')}" for r in results])
+    summary = "\n\n".join([f"- {r.get('title')}\n{r.get('snippet')}\n{r.get('link')}" for r in results])
 
     prompt = f"""
 You're assessing a YouTube creator for brand partnership risk. Based on the following search results, return a JSON:
@@ -103,7 +102,10 @@ Search results:
 """
     response = client.chat.completions.create(
         model="gpt-4",
-        messages=[{"role": "system", "content": "You are a brand safety analyst."}, {"role": "user", "content": prompt}]
+        messages=[
+            {"role": "system", "content": "You are a brand safety analyst."},
+            {"role": "user", "content": prompt}
+        ]
     )
     return response.choices[0].message.content
 

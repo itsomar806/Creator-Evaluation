@@ -125,7 +125,7 @@ if st.session_state.audit_triggered and url:
         metadata = get_channel_metadata(channel_id)
         st.success(f"✅ Channel found: {metadata['title']}")
 
-        videos = get_recent_videos(channel_id)
+        videos = get_recent_videos(metadata['id'])
         for video in videos:
             views = video["views"]
             likes = video["likes"]

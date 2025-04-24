@@ -3,4 +3,4 @@ pandas
 altair
 google-api-python-client
 openai
-openai migrate
+

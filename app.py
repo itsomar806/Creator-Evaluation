@@ -129,7 +129,7 @@ Return the result in this format:
         except Exception as err:
             st.warning("⚠️ Unable to parse AI response for Go/No-Go logic.")
 
-        st.markdown(f"```json\n{result}\n```)\n")
+        st.markdown(f"```json\n{result}\n```")
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")

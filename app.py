@@ -111,9 +111,20 @@ if st.session_state.audit_triggered and url:
             st.markdown(f"**🌍 Country:** {metadata['country']}")
             st.markdown(f"**👥 Subscribers:** {metadata['subs']:,}")
             st.markdown(f"[🔗 View Channel](https://www.youtube.com/channel/{metadata['id']})")
-
-        # --- Sponsorship Calculator ---
+            
+topic_keywords = {
+            "Marketing": ["marketing", "brand", "ads", "advertising", "promotion"],
+            "Sales": ["sales", "sell", "pitch", "close"],
+            "Entrepreneurship / Business": ["startup", "founder", "entrepreneur", "business", "revenue", "profit"],
+            "AI": ["ai", "artificial", "intelligence", "chatgpt", "machine learning"],
+            "Skill Development": ["learn", "course", "skills", "habits", "productivity", "growth"],
+            "Web Development": ["developer", "web", "html", "css", "javascript", "react"],
+            "Operations": ["ops", "operations", "process", "workflow"],
+            "Customer Success": ["customer", "support", "success", "retention"],
+            "Tech": ["tech", "technology", "software", "tools"]
+        }
         st.markdown("---")
+        # --- Sponsorship Calculator ---
         st.subheader("📊 Sponsorship Calculator")
         col1, col2 = st.columns(2)
         with col1:
@@ -134,20 +145,8 @@ if st.session_state.audit_triggered and url:
             recommended_price = round(avg_views * target_cpv)
             st.markdown(f"**Target CPV:** ${target_cpv:.4f}")
             st.markdown(f"**Recommended Cost per Video:** ${recommended_price:,}")
-
-        # --- Topic Clusters ---
+            
         st.markdown("---")
-        topic_keywords = {
-            "Marketing": ["marketing", "brand", "ads", "advertising", "promotion"],
-            "Sales": ["sales", "sell", "pitch", "close"],
-            "Entrepreneurship / Business": ["startup", "founder", "entrepreneur", "business", "revenue", "profit"],
-            "AI": ["ai", "artificial", "intelligence", "chatgpt", "machine learning"],
-            "Skill Development": ["learn", "course", "skills", "habits", "productivity", "growth"],
-            "Web Development": ["developer", "web", "html", "css", "javascript", "react"],
-            "Operations": ["ops", "operations", "process", "workflow"],
-            "Customer Success": ["customer", "support", "success", "retention"],
-            "Tech": ["tech", "technology", "software", "tools"]
-        }
 
         topic_counts = {key: 0 for key in topic_keywords}
         for video in videos:

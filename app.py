@@ -2,37 +2,21 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 import json
-from dashboard import (
-    extract_channel_id_from_url,
-    get_channel_metadata,
-    get_recent_videos,
-    calculate_average_views,
-    get_brand_safety_assessment
-)
+import re
+import os
+import requests
+from urllib.parse import urlparse, parse_qs
+from serpapi import GoogleSearch
+import googleapiclient.discovery
+from openai import OpenAI
 
+# --- UTIL FUNCTIONS (inline instead of dashboard.py) ---
+[...your existing utility functions remain here...]
+
+# --- Streamlit App Logic ---
 st.set_page_config(page_title="YouTube Creator Audit", layout="wide")
 
-st.markdown("""
-    <style>
-    body {
-        background-color: #2E475D;
-        color: #EAF0F6;
-    }
-    .main {
-        background-color: #2E475D;
-        padding-top: 2rem;
-    }
-    input[type="text"] {
-        text-align: center;
-        font-size: 1.2rem;
-        border-radius: 8px;
-        padding: 0.5rem;
-    }
-    #MainMenu, header, footer {visibility: hidden;}
-    </style>
-""", unsafe_allow_html=True)
-
-st.markdown("<h2 style='text-align: center; color: #FFCD78;'>HubSpot Creator Audit</h2>", unsafe_allow_html=True)
+st.title("🔍 YouTube Creator Audit")
 
 if "audit_triggered" not in st.session_state:
     st.session_state.audit_triggered = False
@@ -47,7 +31,7 @@ if st.session_state.audit_triggered and url:
         metadata = get_channel_metadata(channel_id)
         st.success(f"✅ Channel found: {metadata['title']}")
 
-        videos = get_recent_videos(channel_id, max_results=30)
+        videos = get_recent_videos(channel_id)
         for video in videos:
             views = video["views"]
             likes = video["likes"]
@@ -67,8 +51,6 @@ if st.session_state.audit_triggered and url:
             st.markdown(f"**👥 Subscribers:** {metadata['subs']:,}")
             st.markdown(f"[🔗 View Channel](https://www.youtube.com/channel/{metadata['id']})")
 
-        # Sponsorship Calculator
-        st.markdown("---")
         st.subheader("📊 Sponsorship Calculator")
         col1, col2 = st.columns(2)
         with col1:
@@ -90,14 +72,12 @@ if st.session_state.audit_triggered and url:
             st.markdown(f"**Target CPV:** ${target_cpv:.4f}")
             st.markdown(f"**Recommended Cost per Video:** ${recommended_price:,}")
 
-        st.markdown("---")
-
-        # Growth Chart
+        st.subheader("📈 Growth Over Time (by Views)")
         views_df = pd.DataFrame(videos)
         views_df["published"] = pd.to_datetime(views_df["published"])
         views_df = views_df.sort_values(by="published", ascending=True).reset_index(drop=True)
         views_df["label"] = views_df["published"].dt.strftime("%b %d")
-        st.subheader("📈 Growth Over Time (by Views)")
+
         chart = alt.Chart(views_df).mark_bar().encode(
             x=alt.X("label:N", sort=None, title="Publish Date"),
             y=alt.Y("views:Q", title="Views"),
@@ -105,7 +85,6 @@ if st.session_state.audit_triggered and url:
         ).properties(height=400)
         st.altair_chart(chart, use_container_width=True)
 
-        # Top 10 Videos
         st.subheader("🔥 Top 10 Performing Videos")
         df = pd.DataFrame(videos)
         top_videos = df.sort_values(by="views", ascending=False).head(10).reset_index(drop=True)
@@ -113,29 +92,9 @@ if st.session_state.audit_triggered and url:
         top_videos["title"] = top_videos.apply(lambda row: f'<a href="{row.video_url}" target="_blank">{row.title}</a>', axis=1)
         display_df = top_videos[["title", "views", "likes", "comments"]]
         display_df.columns = ["🎬 Title", "👁️ Views", "👍 Likes", "💬 Comments"]
-        table_html = f"""
-            <style>
-                .video-table table {{
-                    width: 100%;
-                    border-collapse: collapse;
-                }}
-                .video-table th, .video-table td {{
-                    padding: 10px;
-                    border: 1px solid #ddd;
-                    text-align: left;
-                    font-size: 15px;
-                }}
-                .video-table th {{
-                    background-color: #f2f2f2;
-                }}
-            </style>
-            <div class="video-table">
-            {display_df.to_html(escape=False, index=False)}
-            </div>
-        """
-        st.markdown(table_html, unsafe_allow_html=True)
+        table_html = display_df.to_html(escape=False, index=False)
+        st.markdown(f"<div class='video-table'>{table_html}</div>", unsafe_allow_html=True)
 
-        # Brand Safety & HEART Assessment
         st.subheader("🚨 Brand Safety & HEART Assessment")
         try:
             search_query = f"{metadata['title']} YouTube creator news OR controversy OR reviews"

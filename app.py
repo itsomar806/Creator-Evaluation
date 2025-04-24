@@ -11,7 +11,99 @@ import googleapiclient.discovery
 from openai import OpenAI
 
 # --- UTIL FUNCTIONS (inline instead of dashboard.py) ---
-[...your existing utility functions remain here...]
+# UTILITIES
+
+def extract_channel_id_from_url(url):
+    if '@' in url:
+        return url.strip().split('/')[-1].replace('@', '')
+    parsed_url = urlparse(url)
+    if 'channel' in url:
+        return url.split('/channel/')[-1].split('/')[0]
+    if 'user' in url or 'c' in url:
+        return url.split('/')[-1]
+    if 'youtube.com/watch' in url:
+        video_id = parse_qs(parsed_url.query).get('v')
+        return video_id[0] if video_id else None
+    return url
+
+def get_channel_metadata(channel_id):
+    YOUTUBE_API_KEY = st.secrets['youtube']['api_key']
+    youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
+    request = youtube.channels().list(part="snippet,statistics", forUsername=channel_id)
+    response = request.execute()
+    items = response.get("items", [])
+    if not items:
+        request = youtube.channels().list(part="snippet,statistics", id=channel_id)
+        response = request.execute()
+        items = response.get("items", [])
+    channel = items[0]
+    return {
+        "title": channel['snippet']['title'],
+        "handle": channel_id,
+        "id": channel['id'],
+        "subs": int(channel['statistics'].get('subscriberCount', 0)),
+        "country": channel['snippet'].get('country', 'Unknown')
+    }
+
+def get_recent_videos(channel_id, max_results=30):
+    YOUTUBE_API_KEY = st.secrets['youtube']['api_key']
+    youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
+    search_response = youtube.search().list(part="id", channelId=channel_id, order="date", maxResults=max_results).execute()
+    video_ids = [item['id']['videoId'] for item in search_response['items'] if item['id']['kind'] == 'youtube#video']
+    video_response = youtube.videos().list(part="snippet,statistics", id=','.join(video_ids)).execute()
+    videos = []
+    for item in video_response["items"]:
+        stats = item["statistics"]
+        snippet = item["snippet"]
+        videos.append({
+            "video_id": item["id"],
+            "title": snippet["title"],
+            "published": snippet["publishedAt"],
+            "views": int(stats.get("viewCount", 0)),
+            "likes": int(stats.get("likeCount", 0)),
+            "comments": int(stats.get("commentCount", 0))
+        })
+    return videos
+
+def calculate_average_views(videos):
+    if not videos:
+        return 0
+    return round(sum(v["views"] for v in videos) / len(videos))
+
+def get_brand_safety_assessment(query):
+    openai_api_key = st.secrets["openai"]["api_key"] if "openai" in st.secrets else os.getenv("OPENAI_API_KEY")
+    client = OpenAI(api_key=openai_api_key)
+    search = GoogleSearch({"q": query, "api_key": st.secrets["serpapi"]["api_key"]})
+    results = search.get_dict().get("organic_results", [])
+    summary = "
+
+".join([f"- {r.get('title')}
+{r.get('snippet')}
+{r.get('link')}" for r in results])
+
+    prompt = f"""
+You're assessing a YouTube creator for brand partnership risk. Based on the following search results, return a JSON:
+{{
+  "brand_risk_score": 1-10,
+  "risk_flags": ["list"],
+  "heart_values": {{
+    "Humble": "Yes/No",
+    "Empathetic": "Yes/No",
+    "Adaptable": "Yes/No",
+    "Remarkable": "Yes/No",
+    "Transparent": "Yes/No"
+  }},
+  "summary": "short summary"
+}}
+
+Search results:
+{summary}
+"""
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[{"role": "system", "content": "You are a brand safety analyst."}, {"role": "user", "content": prompt}]
+    )
+    return response.choices[0].message.content
 
 # --- Streamlit App Logic ---
 st.set_page_config(page_title="YouTube Creator Audit", layout="wide")

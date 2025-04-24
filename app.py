@@ -25,6 +25,9 @@ def get_transcript_text(video_id):
 openai_api_key = st.secrets["openai"]["api_key"] if "openai" in st.secrets else os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=openai_api_key)
 
+if not openai_api_key:
+    st.error("❌ OpenAI API key not found. Please add it to .streamlit/secrets.toml or your environment.")
+
 st.set_page_config(page_title="YouTube Creator Audit", layout="wide")
 
 # --- STYLING ---

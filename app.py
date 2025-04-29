@@ -126,7 +126,7 @@ Findings:
         raise ValueError(f"OpenAI API call failed: {e}")
 
 # --- APP LOGIC ---
-st.title("📊 YouTube Creator Audit")
+st.title("📊 YouTube Creator Evaluation")
 
 url = st.text_input("🔗 Paste YouTube channel URL or handle:")
 if st.button("Run Audit") and url:

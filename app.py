@@ -146,6 +146,7 @@ if st.button("Run Audit") and url:
             st.markdown(f"**🌍 Country:** {meta['country']}")
             st.markdown(f"**👥 Subscribers:** {meta['subs']:,}")
             st.markdown(f"[🔗 View Channel](https://www.youtube.com/channel/{meta['id']})")
+            
      except Exception as e: 
         st.error(f"Something went wrong: {e}")
 

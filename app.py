@@ -91,7 +91,10 @@ def get_topic_clusters(videos):
 
 def get_brand_safety(query):
     results = GoogleSearch({"q": query, "api_key": SERPAPI_API_KEY}).get_dict().get("organic_results", [])
-    context = "\n".join([f"- {r.get('title')}\n{r.get('snippet')}\n{r.get('link')}" for r in results])
+    context = "
+".join([f"- {r.get('title')}
+{r.get('snippet')}
+{r.get('link')}" for r in results])
 
     prompt = f"""
 You're a brand safety analyst. Based on these findings, rate the YouTube creator using this JSON format:
@@ -115,8 +118,7 @@ Findings:
     response = client.chat.completions.create(
         model="gpt-4",
         messages=[
-            {"role": "system", "content": "You are a brand safety evaluator. Use a risk score from 1 (very safe) to 10 (very risky). Be consistent and explain why."
-},
+            {"role": "system", "content": "You are a brand safety evaluator. Use a risk score from 1 (very safe) to 10 (very risky). Be consistent and explain why."},
             {"role": "user", "content": prompt}
         ]
     )

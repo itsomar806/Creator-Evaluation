@@ -125,7 +125,7 @@ Findings:
     if content and content.strip():
         return json.loads(content)
     else:
-        raise ValueError("Empty response from OpenAI. No brand safety data available.")
+        raise ValueError("Empty response from AI. Could not evaluate brand safety.")
 
 # --- APP LOGIC ---
 st.title("📊 YouTube Creator Audit")

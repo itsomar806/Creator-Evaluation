@@ -204,7 +204,7 @@ if st.session_state.get("audit_complete"):
     st.dataframe(table, use_container_width=True)
 
     st.divider()
-    st.subheader("🛡️ Brand Safety & HEART Assessment")
+ st.subheader("🛡️ Brand Safety & HEART Assessment")
     try:
         query = f"{st.session_state['meta']['title']} YouTube creator news OR controversy OR reviews"
         st.markdown(f"🔍 Using enhanced query: `{query}`")
@@ -219,17 +219,26 @@ if st.session_state.get("audit_complete"):
                     {risk["brand_risk_score"]}
                 </span>
             </div>
-            <div style='margin-bottom:1rem;'><strong>❤️ HEART Values:</strong><br>
+            <div style='margin-bottom:1rem;'>
+                <strong>📝 Score Explanation:</strong><br>
+                {risk['score_summary']}
+            </div>
+            <div style='margin-bottom:1rem;'>
+                <strong>❤️ HEART Values with Reasoning:</strong>
                 <ul>
-                    <li>Humble: {risk["heart_values"]["Humble"]}</li>
-                    <li>Empathetic: {risk["heart_values"]["Empathetic"]}</li>
-                    <li>Adaptable: {risk["heart_values"]["Adaptable"]}</li>
-                    <li>Remarkable: {risk["heart_values"]["Remarkable"]}</li>
-                    <li>Transparent: {risk["heart_values"]["Transparent"]}</li>
+                    <li><strong>Humble</strong>: {risk['heart_values']['Humble']['value']} – {risk['heart_values']['Humble']['reason']}</li>
+                    <li><strong>Empathetic</strong>: {risk['heart_values']['Empathetic']['value']} – {risk['heart_values']['Empathetic']['reason']}</li>
+                    <li><strong>Adaptable</strong>: {risk['heart_values']['Adaptable']['value']} – {risk['heart_values']['Adaptable']['reason']}</li>
+                    <li><strong>Remarkable</strong>: {risk['heart_values']['Remarkable']['value']} – {risk['heart_values']['Remarkable']['reason']}</li>
+                    <li><strong>Transparent</strong>: {risk['heart_values']['Transparent']['value']} – {risk['heart_values']['Transparent']['reason']}</li>
                 </ul>
             </div>
-            <div><strong>📝 Explanation:</strong><br>
-                {risk["summary"]}
+            <div style='margin-bottom:1rem;'>
+                <strong>🚩 Risk Flags:</strong><br>
+                {', '.join(risk['risk_flags']) or 'None reported.'}
+            </div>
+            <div><strong>📂 Evidence:</strong><br>
+                <ul>{''.join(f'<li>{e}</li>' for e in risk['evidence'])}</ul>
             </div>
         </div>
         """, unsafe_allow_html=True)

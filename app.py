@@ -2,17 +2,22 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 import json
-import re
 import os
+import re
 import requests
 from urllib.parse import urlparse, parse_qs
 from serpapi import GoogleSearch
 import googleapiclient.discovery
 import openai
 from dotenv import load_dotenv
+
+# Load environment variables
 load_dotenv()
 
-# --- UTIL FUNCTIONS (inline instead of dashboard.py) ---
+# Set OpenAI API Key once at top
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+# Utility Functions
 def extract_channel_id_from_url(url):
     if '@' in url:
         return url.strip().split('/')[-1].replace('@', '')
@@ -27,8 +32,7 @@ def extract_channel_id_from_url(url):
     return url
 
 def get_channel_metadata(channel_identifier):
-    YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
-    youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
+    youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=os.getenv("YOUTUBE_API_KEY"))
 
     if not channel_identifier.startswith("UC"):
         search_resp = youtube.search().list(part="snippet", q=channel_identifier, type="channel", maxResults=1).execute()
@@ -41,7 +45,7 @@ def get_channel_metadata(channel_identifier):
     response = request.execute()
     items = response.get("items", [])
     if not items:
-        raise ValueError("Channel not found. Please check the URL or handle.")
+        raise ValueError("Channel not found.")
     channel = items[0]
     return {
         "title": channel['snippet']['title'],
@@ -52,11 +56,11 @@ def get_channel_metadata(channel_identifier):
     }
 
 def get_recent_videos(channel_id, max_results=30):
-    YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
-    youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
+    youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=os.getenv("YOUTUBE_API_KEY"))
     search_response = youtube.search().list(part="id", channelId=channel_id, order="date", maxResults=max_results).execute()
     video_ids = [item['id']['videoId'] for item in search_response['items'] if item['id']['kind'] == 'youtube#video']
     video_response = youtube.videos().list(part="snippet,statistics", id=','.join(video_ids)).execute()
+
     videos = []
     for item in video_response["items"]:
         stats = item["statistics"]
@@ -77,9 +81,6 @@ def calculate_average_views(videos):
     return round(sum(v["views"] for v in videos) / len(videos))
 
 def get_brand_safety_assessment(query):
-    ai_response = ""  # fallback initialization
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    openai.api_key = openai_api_key
     search = GoogleSearch({"q": query, "api_key": os.getenv("SERPAPI_API_KEY")})
     results = search.get_dict().get("organic_results", [])
     summary = "\n\n".join([f"- {r.get('title')}\n{r.get('snippet')}\n{r.get('link')}" for r in results])
@@ -102,9 +103,7 @@ You're assessing a YouTube creator for brand partnership risk. Based on the foll
 Search results:
 {summary}
 """
-    openai.api_key = openai_api_key
-    client = openai.OpenAI(api_key=openai_api_key)
-    response = client.chat.completions.create(
+    response = openai.chat.completions.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": "You are a brand safety analyst."},
@@ -118,19 +117,13 @@ st.set_page_config(page_title="YouTube Creator Audit", layout="wide")
 
 st.title("🔍 YouTube Creator Audit")
 
-# OpenAI key test button
+# OpenAI Key Test Button
 if st.button("🧪 Test OpenAI Key"):
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    if not test_key:
-        st.error("❌ OPENAI_API_KEY not found in environment.")
-    else:
-        try:
-            openai.api_key = test_key
-            client = openai.Client(api_key=openai_api_key)
-            response = client.chat.completions.create(...)
-            st.success("✅ OpenAI key is valid and working.")
-        except Exception as err:
-            st.error(f"❌ OpenAI key test failed: {err}")
+    try:
+        response = openai.models.list()
+        st.success("✅ OpenAI key is valid and working.")
+    except Exception as err:
+        st.error(f"❌ OpenAI key test failed: {err}")
 
 if "audit_triggered" not in st.session_state:
     st.session_state.audit_triggered = False
@@ -168,12 +161,7 @@ if st.session_state.audit_triggered and url:
         st.subheader("📊 Sponsorship Calculator")
         col1, col2 = st.columns(2)
         with col1:
-            st.markdown(f"""
-            <div style='background-color:#f9f9f9; padding: 1.2rem; border-radius: 10px; border: 1px solid #ccc; text-align: center;'>
-                <span style='font-size: 1.2rem;'>💡 <strong>Average Views (last 30 videos):</strong></span>
-                <div style='font-size: 1.8rem; color: #FFCD78; font-weight: bold;'>{avg_views:,}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f"<div style='background-color:#f9f9f9; padding:1rem; text-align:center; border-radius:8px;'><b>Average Views</b><br><span style='font-size:2rem;color:#FFCD78;'>{avg_views:,}</span></div>", unsafe_allow_html=True)
         with col2:
             cpv_options = {
                 "Conservative CVR (0.30%)": 0.003,
@@ -189,11 +177,11 @@ if st.session_state.audit_triggered and url:
         st.subheader("📈 Growth Over Time (by Views)")
         views_df = pd.DataFrame(videos)
         views_df["published"] = pd.to_datetime(views_df["published"])
-        views_df = views_df.sort_values(by="published", ascending=True).reset_index(drop=True)
+        views_df = views_df.sort_values(by="published")
         views_df["label"] = views_df["published"].dt.strftime("%b %d")
 
         chart = alt.Chart(views_df).mark_bar().encode(
-            x=alt.X("label:N", sort=None, title="Publish Date"),
+            x=alt.X("label:N", title="Publish Date", sort=None),
             y=alt.Y("views:Q", title="Views"),
             tooltip=["label", "views", "title"]
         ).properties(height=400)
@@ -201,7 +189,7 @@ if st.session_state.audit_triggered and url:
 
         st.subheader("🔥 Top 10 Performing Videos")
         df = pd.DataFrame(videos)
-        top_videos = df.sort_values(by="views", ascending=False).head(10).reset_index(drop=True)
+        top_videos = df.sort_values(by="views", ascending=False).head(10)
         top_videos["video_url"] = top_videos["video_id"].apply(lambda x: f"https://www.youtube.com/watch?v={x}")
         top_videos["title"] = top_videos.apply(lambda row: f'<a href="{row.video_url}" target="_blank">{row.title}</a>', axis=1)
         display_df = top_videos[["title", "views", "likes", "comments"]]
@@ -219,8 +207,8 @@ if st.session_state.audit_triggered and url:
             st.markdown(f"**HEART Values:** {parsed.get('heart_values', {})}")
             st.markdown(f"**Summary:** {parsed.get('summary', '')}")
         except Exception as err:
-            st.warning("⚠️ Unable to parse AI response.")
-            st.markdown(f"Raw AI response unavailable. Error: {err}")
+            st.warning(f"⚠️ Unable to parse AI response. Error: {err}")
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")
+

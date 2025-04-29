@@ -1,4 +1,4 @@
-# 🧠 YouTube Creator Audit Tool (Styled & Polished)
+# 🧠 YouTube Creator Audit Tool (Updated & Polished)
 import streamlit as st
 import pandas as pd
 import altair as alt
@@ -11,6 +11,7 @@ import openai
 
 # Load secrets
 openai.api_key = st.secrets["OPENAI_API_KEY"]
+client = openai.OpenAI()  # NEW - fixes ChatCompletion issue
 YOUTUBE_API_KEY = st.secrets["YOUTUBE_API_KEY"]
 SERPAPI_API_KEY = st.secrets["SERPAPI_API_KEY"]
 
@@ -100,7 +101,7 @@ You're a brand safety analyst. Based on these findings, rate the YouTube creator
 Findings:
 {context}
 """
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(  # UPDATED
         model="gpt-4",
         messages=[
             {"role": "system", "content": "You evaluate creators for brand risks."},
@@ -123,8 +124,8 @@ if st.button("Run Audit") and url:
         clusters = get_topic_clusters(videos)
 
         # Creator Overview
-        st.markdown("---")
-        st.header("🎯 Creator Overview")
+        st.divider()
+        st.subheader("🎯 Creator Overview")
         st.markdown(f"**🧠 Topic Clusters:** {clusters}")
         col1, col2 = st.columns(2)
         with col1:
@@ -137,8 +138,8 @@ if st.button("Run Audit") and url:
             st.markdown(f"[🔗 View Channel](https://www.youtube.com/channel/{meta['id']})")
 
         # Sponsorship Calculator
-        st.markdown("---")
-        st.header("💰 Sponsorship Calculator")
+        st.divider()
+        st.subheader("💰 Sponsorship Calculator")
         col1, col2 = st.columns([1, 2])
         with col1:
             st.markdown(f"""
@@ -156,8 +157,8 @@ if st.button("Run Audit") and url:
             st.markdown(f"**💸 Recommended Price per Video:** **${price:,}**")
 
         # Growth Chart
-        st.markdown("---")
-        st.header("📈 Growth Over Time (Views)")
+        st.divider()
+        st.subheader("📈 Growth Over Time (Views)")
         df = pd.DataFrame(videos)
         df["published"] = pd.to_datetime(df["published"])
         df = df.sort_values("published")
@@ -171,18 +172,19 @@ if st.button("Run Audit") and url:
         st.altair_chart(chart, use_container_width=True)
 
         # Top 10
-        st.markdown("---")
-        st.header("🔥 Top 10 Performing Videos")
+        st.divider()
+        st.subheader("🔥 Top 10 Performing Videos")
         top = df.sort_values("views", ascending=False).head(10)
-        top["video_url"] = top["video_id"].apply(lambda x: f"https://www.youtube.com/watch?v={x}")
-        top["title"] = top.apply(lambda r: f"<a href='{r.video_url}' target='_blank'>{r.title}</a>", axis=1)
-        table = top[["title", "views", "likes", "comments"]]
-        table.columns = ["🎬 Title", "👁️ Views", "👍 Likes", "💬 Comments"]
-        st.markdown(table.to_html(escape=False, index=False), unsafe_allow_html=True)
+        top["Video URL"] = top["video_id"].apply(lambda x: f"https://www.youtube.com/watch?v={x}")
+
+        table = top[["title", "views", "likes", "comments", "Video URL"]]
+        table.columns = ["🎬 Title", "👁️ Views", "👍 Likes", "💬 Comments", "🔗 Link"]
+
+        st.dataframe(table, use_container_width=True)
 
         # Brand Safety
-        st.markdown("---")
-        st.header("🚨 Brand Safety & HEART Assessment")
+        st.divider()
+        st.subheader("🚨 Brand Safety & HEART Assessment")
         try:
             query = f"{meta['title']} YouTube creator news OR controversy OR reviews"
             st.markdown(f"🔍 Using enhanced query: `{query}`")

@@ -92,6 +92,7 @@ def get_topic_clusters(videos):
 def get_brand_safety(query):
     results = GoogleSearch({"q": query, "api_key": SERPAPI_API_KEY}).get_dict().get("organic_results", [])
     context = "\n".join([f"- {r.get('title')}\n{r.get('snippet')}\n{r.get('link')}" for r in results])
+
     prompt = f"""
 You're a brand safety analyst. Based on these findings, rate the YouTube creator using this JSON format:
 {{
@@ -110,20 +111,21 @@ You're a brand safety analyst. Based on these findings, rate the YouTube creator
 Findings:
 {context}
 """
-   response = client.chat.completions.create(
+
+    response = client.chat.completions.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": "You evaluate creators for brand risks."},
             {"role": "user", "content": prompt}
         ]
-)
+    )
 
-content = response.choices[0].message.content
+    content = response.choices[0].message.content
 
-if content:
-    return json.loads(content)
-else:
-    raise ValueError("Empty response from AI")
+    if content:
+        return json.loads(content)
+    else:
+        raise ValueError("Empty response from AI")
 
 # --- APP LOGIC ---
 st.title("📊 YouTube Creator Audit")

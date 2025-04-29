@@ -178,8 +178,6 @@ if st.session_state.get("audit_complete"):
         <div style='font-size: 1rem;'>💸 <strong>Recommended Price per Video:</strong> ${price:,}</div>
     </div>
     """, unsafe_allow_html=True)
-
-# The rest of the app continues...
     
         # Growth Chart
         st.divider()

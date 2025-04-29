@@ -126,7 +126,7 @@ Findings:
             raise ValueError("OpenAI returned invalid JSON. Content: " + repr(content))
     except Exception as e:
             raise ValueError(f"OpenAI API call failed: {e}")
-        except json.JSONDecodeError:
+    except json.JSONDecodeError:
             raise ValueError("OpenAI returned invalid JSON. Content: " + repr(content))
     except Exception as e:
         raise ValueError(f"OpenAI API call failed: {e}")

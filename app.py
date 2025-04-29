@@ -204,7 +204,7 @@ if st.session_state.get("audit_complete"):
     st.dataframe(table, use_container_width=True)
 
     st.divider()
- st.subheader("🛡️ Brand Safety & HEART Assessment")
+    st.subheader("🛡️ Brand Safety & HEART Assessment")
     try:
         query = f"{st.session_state['meta']['title']} YouTube creator news OR controversy OR reviews"
         st.markdown(f"🔍 Using enhanced query: `{query}`")

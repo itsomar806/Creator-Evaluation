@@ -42,7 +42,6 @@ def get_channel_metadata(identifier):
     return {
         "title": channel["snippet"]["title"],
         "handle": identifier,
-        "id": channel["id"],
         "subs": int(channel["statistics"].get("subscriberCount", 0)),
         "country": channel["snippet"].get("country", "Unknown")
     }

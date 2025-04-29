@@ -15,7 +15,7 @@ client = openai.OpenAI()
 YOUTUBE_API_KEY = st.secrets["YOUTUBE_API_KEY"]
 SERPAPI_API_KEY = st.secrets["SERPAPI_API_KEY"]
 
-# CPV values and selectbox (moved to global)
+# CPV values and selectbox
 cpvs = {"Conservative (0.3%)": 0.003, "Median (0.35%)": 0.0035, "Best Case (0.5%)": 0.005}
 label = st.selectbox("🌟 Choose CPV Scenario", options=list(cpvs.keys()), key="cpv_option")
 target_cpv = cpvs[label]
@@ -149,7 +149,6 @@ if st.button("Run Audit") and url:
     except Exception as e:
         st.error(f"Something went wrong: {e}")
 
-# Show Sponsorship Calculator if audit is complete
 if st.session_state.get("audit_complete"):
     st.divider()
     st.subheader("💰 Sponsorship Calculator")
@@ -163,65 +162,59 @@ if st.session_state.get("audit_complete"):
         <div style='font-size: 1rem;'>💸 <strong>Recommended Price per Video:</strong> ${price:,}</div>
     </div>
     """, unsafe_allow_html=True)
-    
-        # Growth Chart
-        st.divider()
-        st.subheader("📈 Growth Over Time (Views)")
-        df = pd.DataFrame(videos)
-        df["published"] = pd.to_datetime(df["published"])
-        df = df.sort_values("published")
-        df["label"] = df["published"].dt.strftime("%b %d")
-        chart = alt.Chart(df).mark_bar().encode(
-            x=alt.X("label:N", sort=None),
-            y="views:Q",
-            tooltip=["title", "views"]
-        ).properties(width=1000, height=400)
-        st.altair_chart(chart, use_container_width=True)
 
-        # Top 10 Performing Videos
-        st.divider()
-        st.subheader("🔥 Top 10 Performing Videos")
-        top = df.sort_values("views", ascending=False).head(10)
-        top["Video URL"] = top["video_id"].apply(lambda x: f"https://www.youtube.com/watch?v={x}")
-        table = top[["title", "views", "likes", "comments", "Video URL"]]
-        table.columns = ["🎬 Title", "👁️ Views", "👍 Likes", "💬 Comments", "🔗 Link"]
-        st.dataframe(table, use_container_width=True)
+    st.divider()
+    st.subheader("📈 Growth Over Time (Views)")
+    df = pd.DataFrame(st.session_state["videos"])
+    df["published"] = pd.to_datetime(df["published"])
+    df = df.sort_values("published")
+    df["label"] = df["published"].dt.strftime("%b %d")
+    chart = alt.Chart(df).mark_bar().encode(
+        x=alt.X("label:N", sort=None),
+        y="views:Q",
+        tooltip=["title", "views"]
+    ).properties(width=1000, height=400)
+    st.altair_chart(chart, use_container_width=True)
 
-        # Brand Safety
-        st.divider()
-        st.subheader("🛘️ Brand Safety & HEART Assessment")
-        try:
-            query = f"{meta['title']} YouTube creator news OR controversy OR reviews"
-            st.markdown(f"🔍 Using enhanced query: `{query}`")
-            risk = get_brand_safety(query)
-            score_color = "#4CAF50" if risk["brand_risk_score"] <= 3 else "#FFC107" if risk["brand_risk_score"] <= 6 else "#F44336"
+    st.divider()
+    st.subheader("🔥 Top 10 Performing Videos")
+    top = df.sort_values("views", ascending=False).head(10)
+    top["Video URL"] = top["video_id"].apply(lambda x: f"https://www.youtube.com/watch?v={x}")
+    table = top[["title", "views", "likes", "comments", "Video URL"]]
+    table.columns = ["🎬 Title", "👁️ Views", "👍 Likes", "💬 Comments", "🔗 Link"]
+    st.dataframe(table, use_container_width=True)
 
-            st.markdown(f"""
-            <div style='border:1px solid #ddd; padding:1.5rem; border-radius:10px; background-color:#f9f9f9'>
-                <div style='font-size:1.1rem; margin-bottom:1rem;'>
-                    <strong>🧪 Brand Risk Score:</strong>
-                    <span style='padding:4px 12px; background-color:{score_color}; color:white; border-radius:20px; font-weight:bold;'>
-                        {risk["brand_risk_score"]}
-                    </span>
-                </div>
-                <div style='margin-bottom:1rem;'><strong>❤️ HEART Values:</strong><br>
-                    <ul>
-                        <li>Humble: {risk["heart_values"]["Humble"]}</li>
-                        <li>Empathetic: {risk["heart_values"]["Empathetic"]}</li>
-                        <li>Adaptable: {risk["heart_values"]["Adaptable"]}</li>
-                        <li>Remarkable: {risk["heart_values"]["Remarkable"]}</li>
-                        <li>Transparent: {risk["heart_values"]["Transparent"]}</li>
-                    </ul>
-                </div>
-                <div><strong>📝 Explanation:</strong><br>
-                    {risk["summary"]}
-                </div>
+    st.divider()
+    st.subheader("🛡️ Brand Safety & HEART Assessment")
+    try:
+        query = f"{st.session_state['meta']['title']} YouTube creator news OR controversy OR reviews"
+        st.markdown(f"🔍 Using enhanced query: `{query}`")
+        risk = get_brand_safety(query)
+        score_color = "#4CAF50" if risk["brand_risk_score"] <= 3 else "#FFC107" if risk["brand_risk_score"] <= 6 else "#F44336"
+
+        st.markdown(f"""
+        <div style='border:1px solid #ddd; padding:1.5rem; border-radius:10px; background-color:#f9f9f9'>
+            <div style='font-size:1.1rem; margin-bottom:1rem;'>
+                <strong>🧪 Brand Risk Score:</strong>
+                <span style='padding:4px 12px; background-color:{score_color}; color:white; border-radius:20px; font-weight:bold;'>
+                    {risk["brand_risk_score"]}
+                </span>
             </div>
-            """, unsafe_allow_html=True)
-
-        except Exception as e:
-            st.warning("⚠️ Unable to parse AI response.")
-            st.text(str(e))
+            <div style='margin-bottom:1rem;'><strong>❤️ HEART Values:</strong><br>
+                <ul>
+                    <li>Humble: {risk["heart_values"]["Humble"]}</li>
+                    <li>Empathetic: {risk["heart_values"]["Empathetic"]}</li>
+                    <li>Adaptable: {risk["heart_values"]["Adaptable"]}</li>
+                    <li>Remarkable: {risk["heart_values"]["Remarkable"]}</li>
+                    <li>Transparent: {risk["heart_values"]["Transparent"]}</li>
+                </ul>
+            </div>
+            <div><strong>📝 Explanation:</strong><br>
+                {risk["summary"]}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
     except Exception as e:
-        st.error(f"Something went wrong: {e}")
+        st.warning("⚠️ Unable to parse AI response.")
+        st.text(str(e))

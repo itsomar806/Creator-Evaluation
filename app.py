@@ -14,7 +14,7 @@ st.set_page_config(page_title="YouTube Creator Audit", layout="wide")
 
 # Load secrets
 openai.api_key = st.secrets["OPENAI_API_KEY"]
-client = openai.OpenAI()
+client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 YOUTUBE_API_KEY = st.secrets["YOUTUBE_API_KEY"]
 SERPAPI_API_KEY = st.secrets["SERPAPI_API_KEY"]
 

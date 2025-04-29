@@ -113,10 +113,12 @@ Findings:
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are a brand safety evaluator. Use a score from 1 (very safe) to 10 (very risky). Return ONLY valid JSON in your reply."},
+                {"role": "system", "content": "You are a brand safety evaluator. Always respond with strict valid JSON format."},
                 {"role": "user", "content": prompt}
-            ]
+            ],
+            response_format="json"
         )
+
         content = response.choices[0].message.content
         if not content or not content.strip():
             raise ValueError("OpenAI returned empty content.")

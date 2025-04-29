@@ -100,14 +100,20 @@ You're assessing a YouTube creator for brand partnership risk. Based on the foll
 Search results:
 {summary}
 """
-    response = openai.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are a brand safety analyst."},
-            {"role": "user", "content": prompt}
-        ]
-    )
-    return response.choices[0].message.content
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a brand safety analyst."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        ai_response = response.choices[0].message.content.strip()
+        if not ai_response:
+            raise ValueError("Empty AI response. Please check your OpenAI key or quota.")
+        return ai_response
+    except Exception as err:
+        raise RuntimeError(f"OpenAI API Error: {err}")
 
 # --- STREAMLIT APP ---
 

@@ -86,6 +86,7 @@ def get_topic_clusters(videos):
 def get_brand_safety(query):
     results = GoogleSearch({"q": query, "api_key": SERPAPI_API_KEY}).get_dict().get("organic_results", [])
     context = "\n".join([f"- {r.get('title')}\n{r.get('snippet')}\n{r.get('link')}" for r in results])
+
     prompt = f"""
 You are a brand safety analyst. Based on the findings below, return a detailed JSON assessment:
 
@@ -112,23 +113,19 @@ Findings:
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are a brand safety evaluator. You must return ONLY a valid JSON object. Do NOT add any commentary, only valid JSON."},
+                {"role": "system", "content": "You are a brand safety evaluator. Always return STRICT valid JSON. Do not add any commentary."},
                 {"role": "user", "content": prompt}
-            ],
-            response_format="json"
+            ]
         )
-
         content = response.choices[0].message.content
         if not content or not content.strip():
             raise ValueError("OpenAI returned empty content.")
         try:
             return json.loads(content)
         except json.JSONDecodeError:
-            raise ValueError("OpenAI returned invalid JSON. Content: " + repr(content))
-    except Exception as e:
-            raise ValueError(f"OpenAI API call failed: {e}")
-    except json.JSONDecodeError:
-            raise ValueError("OpenAI returned invalid JSON. Content: " + repr(content))
+            # Try a simple recovery if OpenAI messed up quotes
+            fixed_content = content.replace('\n', '').replace("'", '"')  # Replace single quotes with double quotes
+            return json.loads(fixed_content)
     except Exception as e:
         raise ValueError(f"OpenAI API call failed: {e}")
 

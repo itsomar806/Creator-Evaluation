@@ -88,19 +88,21 @@ def get_brand_safety(query):
     context = "\n".join([f"- {r.get('title')}\n{r.get('snippet')}\n{r.get('link')}" for r in results])
 
     prompt = f"""
-You are a brand safety analyst. Based on the findings below, return a JSON rating:
+You are a brand safety analyst. Based on the findings below, return a detailed JSON assessment:
 
 {{
   "brand_risk_score": integer from 1 to 10 (1 = low risk, 10 = high risk),
-  "risk_flags": ["list if any"],
+  "score_summary": "Concise summary (3–4 sentences) explaining the score.",
+  "risk_flags": ["Any notable risks or sensitive topics"],
   "heart_values": {{
-    "Humble": "Yes/No",
-    "Empathetic": "Yes/No",
-    "Adaptable": "Yes/No",
-    "Remarkable": "Yes/No",
-    "Transparent": "Yes/No"
+    "Humble": {{"value": "Yes" or "No", "reason": "brief explanation"}},
+    "Empathetic": {{"value": "Yes" or "No", "reason": "brief explanation"}},
+    "Adaptable": {{"value": "Yes" or "No", "reason": "brief explanation"}},
+    "Remarkable": {{"value": "Yes" or "No", "reason": "brief explanation"}},
+    "Transparent": {{"value": "Yes" or "No", "reason": "brief explanation"}}
   }},
-  "summary": "short explanation for your score"
+  "summary": "Overall summary",
+  "evidence": ["List of any quotes or examples that informed the score"]
 }}
 
 Findings:
@@ -120,6 +122,10 @@ Findings:
             raise ValueError("OpenAI returned empty content.")
         try:
             return json.loads(content)
+        except json.JSONDecodeError:
+            raise ValueError("OpenAI returned invalid JSON. Content: " + repr(content))
+    except Exception as e:
+        raise ValueError(f"OpenAI API call failed: {e}")
         except json.JSONDecodeError:
             raise ValueError("OpenAI returned invalid JSON. Content: " + repr(content))
     except Exception as e:

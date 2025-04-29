@@ -24,11 +24,6 @@ if st.button("🔄 Reset Audit"):
         st.session_state.pop(key, None)
     st.experimental_rerun()
 
-# CPV values and selectbox
-cpvs = {"Conservative (0.3%)": 0.003, "Median (0.35%)": 0.0035, "Best Case (0.5%)": 0.005}
-label = st.selectbox("🌟 Choose CPV Scenario", options=list(cpvs.keys()), key="cpv_option")
-target_cpv = cpvs[label]
-
 # --- UTILITIES ---
 def extract_channel_id_from_url(url):
     if '@' in url:
@@ -160,8 +155,12 @@ if st.button("Run Audit") and url:
 if st.session_state.get("audit_complete"):
     st.divider()
     st.subheader("💰 Sponsorship Calculator")
+    cpvs = {"Conservative (0.3%)": 0.003, "Median (0.35%)": 0.0035, "Best Case (0.5%)": 0.005}
+    label = st.selectbox("🌟 Choose CPV Scenario", options=list(cpvs.keys()), key="cpv_option")
+    target_cpv = cpvs[label]
     avg_views = st.session_state["avg_views"]
     price = round(avg_views * target_cpv)
+
     st.markdown(f"""
     <div style='background-color:#fdf6ec; padding:1.5rem 2rem; border-radius:10px; border:1px solid #f4d6a0; text-align:center; width:100%; max-width: 100%; margin: auto;'>
         <div style='font-size: 1.2rem;'>📺 <strong>Average Views</strong></div>

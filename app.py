@@ -10,7 +10,7 @@ import googleapiclient.discovery
 import openai
 
 # MUST BE FIRST: Page config
-st.set_page_config(page_title="YouTube Creator Audit", layout="wide")
+st.set_page_config(page_title="YouTube Creator Evaluation", layout="wide")
 
 # Load secrets
 openai.api_key = st.secrets["OPENAI_API_KEY"]
@@ -125,7 +125,6 @@ Findings:
     return json.loads(response.choices[0].message.content)
 
 # --- APP LOGIC ---
-st.set_page_config("YouTube Creator Audit", layout="wide")
 st.title("📊 YouTube Creator Audit")
 
 url = st.text_input("🔗 Paste YouTube channel URL or handle:")

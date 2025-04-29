@@ -111,11 +111,11 @@ Findings:
 {context}
 """
    response = client.chat.completions.create(
-    model="gpt-4",
-    messages=[
-        {"role": "system", "content": "You evaluate creators for brand risks."},
-        {"role": "user", "content": prompt}
-    ]
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You evaluate creators for brand risks."},
+            {"role": "user", "content": prompt}
+        ]
 )
 
 content = response.choices[0].message.content

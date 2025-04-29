@@ -18,12 +18,6 @@ client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 YOUTUBE_API_KEY = st.secrets["YOUTUBE_API_KEY"]
 SERPAPI_API_KEY = st.secrets["SERPAPI_API_KEY"]
 
-# Reset button
-if st.button("🔄 Reset Audit"):
-    for key in ["meta", "videos", "avg_views", "clusters", "audit_complete"]:
-        st.session_state.pop(key, None)
-    st.experimental_rerun()
-
 # --- UTILITIES ---
 def extract_channel_id_from_url(url):
     if '@' in url:

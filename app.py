@@ -122,10 +122,10 @@ Findings:
 
     content = response.choices[0].message.content
 
-    if content:
+    if content and content.strip():
         return json.loads(content)
     else:
-        raise ValueError("Empty response from AI")
+        raise ValueError("Empty response from OpenAI. No brand safety data available.")
 
 # --- APP LOGIC ---
 st.title("📊 YouTube Creator Audit")

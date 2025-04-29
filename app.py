@@ -72,7 +72,7 @@ def calculate_avg_views(videos):
 
 def get_topic_clusters(videos):
     keywords = {
-        "Marketing": ["marketing", "brand", "ads"],
+        "Marketing": ["marketing", "brand", "ads", "social media"],
         "Sales": ["sales", "pitch", "close"],
         "Entrepreneurship / Business": ["business", "startup", "entrepreneur"],
         "AI": ["ai", "chatgpt", "machine learning"],

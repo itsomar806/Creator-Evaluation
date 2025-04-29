@@ -110,14 +110,20 @@ You're a brand safety analyst. Based on these findings, rate the YouTube creator
 Findings:
 {context}
 """
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You evaluate creators for brand risks."},
-            {"role": "user", "content": prompt}
-        ]
-    )
-    return json.loads(response.choices[0].message.content)
+   response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[
+        {"role": "system", "content": "You evaluate creators for brand risks."},
+        {"role": "user", "content": prompt}
+    ]
+)
+
+content = response.choices[0].message.content
+
+if content:
+    return json.loads(content)
+else:
+    raise ValueError("Empty response from AI")
 
 # --- APP LOGIC ---
 st.title("📊 YouTube Creator Audit")

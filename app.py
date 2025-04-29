@@ -10,7 +10,7 @@ import googleapiclient.discovery
 import openai
 
 # MUST BE FIRST: Page config
-st.set_page_config(page_title="YouTube Creator Audit", layout="wide")
+st.set_page_config(page_title="YouTube Creator Evaluation", layout="wide")
 
 # Load secrets
 openai.api_key = st.secrets["OPENAI_API_KEY"]

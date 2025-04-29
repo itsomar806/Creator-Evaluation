@@ -91,10 +91,7 @@ def get_topic_clusters(videos):
 
 def get_brand_safety(query):
     results = GoogleSearch({"q": query, "api_key": SERPAPI_API_KEY}).get_dict().get("organic_results", [])
-    context = "
-    ".join([f"- {r.get('title')}
-    {r.get('snippet')}
-    {r.get('link')}" for r in results])
+    context = "".join([f"- {r.get('title')}{r.get('snippet')}{r.get('link')}" for r in results])
 
     prompt = f"""
 You're a brand safety analyst. Based on these findings, rate the YouTube creator using this JSON format:

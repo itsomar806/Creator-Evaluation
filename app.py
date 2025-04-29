@@ -1,92 +1,92 @@
+# 🧠 YouTube Creator Audit Tool (Styled & Polished)
 import streamlit as st
 import pandas as pd
 import altair as alt
 import json
-import re
 import os
-import requests
 from urllib.parse import urlparse, parse_qs
 from serpapi import GoogleSearch
 import googleapiclient.discovery
 import openai
 
-# Set API keys from Streamlit Secrets
+# Load secrets
 openai.api_key = st.secrets["OPENAI_API_KEY"]
+YOUTUBE_API_KEY = st.secrets["YOUTUBE_API_KEY"]
+SERPAPI_API_KEY = st.secrets["SERPAPI_API_KEY"]
 
-# --- UTIL FUNCTIONS ---
-
+# --- UTILITIES ---
 def extract_channel_id_from_url(url):
     if '@' in url:
         return url.strip().split('/')[-1].replace('@', '')
-    parsed_url = urlparse(url)
+    parsed = urlparse(url)
     if 'channel' in url:
         return url.split('/channel/')[-1].split('/')[0]
     if 'user' in url or 'c' in url:
         return url.split('/')[-1]
-    if 'youtube.com/watch' in url:
-        video_id = parse_qs(parsed_url.query).get('v')
-        return video_id[0] if video_id else None
     return url
 
-def get_channel_metadata(channel_identifier):
-    youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=st.secrets["YOUTUBE_API_KEY"])
-
-    if not channel_identifier.startswith("UC"):
-        search_resp = youtube.search().list(part="snippet", q=channel_identifier, type="channel", maxResults=1).execute()
-        items = search_resp.get("items", [])
+def get_channel_metadata(identifier):
+    yt = googleapiclient.discovery.build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
+    if not identifier.startswith("UC"):
+        search = yt.search().list(part="snippet", q=identifier, type="channel", maxResults=1).execute()
+        items = search.get("items", [])
         if not items:
             raise ValueError("Channel not found via search.")
-        channel_identifier = items[0]["snippet"]["channelId"]
-
-    request = youtube.channels().list(part="snippet,statistics", id=channel_identifier)
-    response = request.execute()
-    items = response.get("items", [])
-    if not items:
-        raise ValueError("Channel not found.")
-    channel = items[0]
+        identifier = items[0]["snippet"]["channelId"]
+    request = yt.channels().list(part="snippet,statistics", id=identifier)
+    channel = request.execute()["items"][0]
     return {
-        "title": channel['snippet']['title'],
-        "handle": channel_identifier,
-        "id": channel['id'],
-        "subs": int(channel['statistics'].get('subscriberCount', 0)),
-        "country": channel['snippet'].get('country', 'Unknown')
+        "title": channel["snippet"]["title"],
+        "handle": identifier,
+        "id": channel["id"],
+        "subs": int(channel["statistics"].get("subscriberCount", 0)),
+        "country": channel["snippet"].get("country", "Unknown")
     }
 
 def get_recent_videos(channel_id, max_results=30):
-    youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=st.secrets["YOUTUBE_API_KEY"])
-    search_response = youtube.search().list(part="id", channelId=channel_id, order="date", maxResults=max_results).execute()
-    video_ids = [item['id']['videoId'] for item in search_response['items'] if item['id']['kind'] == 'youtube#video']
-    video_response = youtube.videos().list(part="snippet,statistics", id=','.join(video_ids)).execute()
+    yt = googleapiclient.discovery.build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
+    search = yt.search().list(part="id", channelId=channel_id, order="date", maxResults=max_results).execute()
+    video_ids = [item["id"]["videoId"] for item in search["items"] if item["id"]["kind"] == "youtube#video"]
+    vids = yt.videos().list(part="snippet,statistics", id=",".join(video_ids)).execute()["items"]
+    return [{
+        "video_id": v["id"],
+        "title": v["snippet"]["title"],
+        "published": v["snippet"]["publishedAt"],
+        "views": int(v["statistics"].get("viewCount", 0)),
+        "likes": int(v["statistics"].get("likeCount", 0)),
+        "comments": int(v["statistics"].get("commentCount", 0))
+    } for v in vids]
 
-    videos = []
-    for item in video_response["items"]:
-        stats = item["statistics"]
-        snippet = item["snippet"]
-        videos.append({
-            "video_id": item["id"],
-            "title": snippet["title"],
-            "published": snippet["publishedAt"],
-            "views": int(stats.get("viewCount", 0)),
-            "likes": int(stats.get("likeCount", 0)),
-            "comments": int(stats.get("commentCount", 0))
-        })
-    return videos
+def calculate_avg_views(videos):
+    return round(sum(v["views"] for v in videos) / len(videos)) if videos else 0
 
-def calculate_average_views(videos):
-    if not videos:
-        return 0
-    return round(sum(v["views"] for v in videos) / len(videos))
+def get_topic_clusters(videos):
+    keywords = {
+        "Marketing": ["marketing", "brand", "ads"],
+        "Sales": ["sales", "pitch", "close"],
+        "Entrepreneurship / Business": ["business", "startup", "entrepreneur"],
+        "AI": ["ai", "chatgpt", "machine learning"],
+        "Skill Development": ["skills", "learning", "habits", "productivity"],
+        "Web Dev": ["html", "css", "javascript", "developer"],
+        "Customer Success": ["customer", "support"],
+        "Tech": ["tech", "software", "tools"]
+    }
+    clusters = {k: 0 for k in keywords}
+    for v in videos:
+        title = v["title"].lower()
+        for category, words in keywords.items():
+            if any(w in title for w in words):
+                clusters[category] += 1
+    return ", ".join([k for k, v in sorted(clusters.items(), key=lambda x: -x[1]) if v > 0]) or "N/A"
 
-def get_brand_safety_assessment(query):
-    search = GoogleSearch({"q": query, "api_key": st.secrets["SERPAPI_API_KEY"]})
-    results = search.get_dict().get("organic_results", [])
-    summary = "\n\n".join([f"- {r.get('title')}\n{r.get('snippet')}\n{r.get('link')}" for r in results])
-
+def get_brand_safety(query):
+    results = GoogleSearch({"q": query, "api_key": SERPAPI_API_KEY}).get_dict().get("organic_results", [])
+    context = "\n".join([f"- {r.get('title')}\n{r.get('snippet')}\n{r.get('link')}" for r in results])
     prompt = f"""
-You're assessing a YouTube creator for brand partnership risk. Based on the following search results, return a JSON:
+You're a brand safety analyst. Based on these findings, rate the YouTube creator using this JSON format:
 {{
   "brand_risk_score": 1-10,
-  "risk_flags": ["list"],
+  "risk_flags": ["list if any"],
   "heart_values": {{
     "Humble": "Yes/No",
     "Empathetic": "Yes/No",
@@ -94,155 +94,105 @@ You're assessing a YouTube creator for brand partnership risk. Based on the foll
     "Remarkable": "Yes/No",
     "Transparent": "Yes/No"
   }},
-  "summary": "short summary"
+  "summary": "short narrative summary"
 }}
 
-Search results:
-{summary}
+Findings:
+{context}
 """
-    try:
-        response = openai.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a brand safety analyst."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        ai_response = response.choices[0].message.content.strip()
-        if not ai_response:
-            raise ValueError("Empty AI response. Please check your OpenAI key or quota.")
-        return ai_response
-    except Exception as err:
-        raise RuntimeError(f"OpenAI API Error: {err}")
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You evaluate creators for brand risks."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    return json.loads(response.choices[0].message.content)
 
-# --- STREAMLIT APP ---
+# --- APP LOGIC ---
+st.set_page_config("YouTube Creator Audit", layout="wide")
+st.title("📊 YouTube Creator Audit")
 
-st.set_page_config(page_title="YouTube Creator Audit", layout="wide")
-st.title("🔍 YouTube Creator Audit")
-
-# OpenAI Key Test
-if st.button("🧪 Test OpenAI Key"):
-    try:
-        openai.models.list()
-        st.success("✅ OpenAI key is valid and working.")
-    except Exception as err:
-        st.error(f"❌ OpenAI key test failed: {err}")
-
-if "audit_triggered" not in st.session_state:
-    st.session_state.audit_triggered = False
-
-url = st.text_input("Paste a YouTube channel URL:")
-if st.button("Run Audit"):
-    st.session_state.audit_triggered = True
-
-if st.session_state.audit_triggered and url:
+url = st.text_input("🔗 Paste YouTube channel URL or handle:")
+if st.button("Run Audit") and url:
     try:
         channel_id = extract_channel_id_from_url(url)
-        metadata = get_channel_metadata(channel_id)
-        st.success(f"✅ Channel found: {metadata['title']}")
+        meta = get_channel_metadata(channel_id)
+        videos = get_recent_videos(meta["id"])
+        avg_views = calculate_avg_views(videos)
+        clusters = get_topic_clusters(videos)
 
-        videos = get_recent_videos(metadata['id'])
-        for video in videos:
-            views = video["views"]
-            likes = video["likes"]
-            comments = video["comments"]
-            video["engagement_rate"] = round(((likes + comments) / views) * 100, 2) if views > 0 else 0
-
-        avg_views = calculate_average_views(videos)
-
-        st.subheader("📌 Creator Overview")
-
-        # Topic Clustering
-        topic_keywords = {
-            "Marketing": ["marketing", "ads", "advertising", "brand"],
-            "Sales": ["sales", "pitch", "close"],
-            "Entrepreneurship / Business": ["business", "entrepreneur", "startup", "founder"],
-            "AI": ["ai", "chatgpt", "artificial intelligence", "machine learning"],
-            "Skill Development": ["skills", "learning", "habits", "productivity"],
-            "Web Development": ["web", "html", "css", "javascript", "developer"],
-            "Operations": ["operations", "workflow", "ops"],
-            "Customer Success": ["customer", "support", "retention"],
-            "Tech": ["tech", "technology", "software"]
-        }
-
-        topic_counts = {key: 0 for key in topic_keywords}
-        for video in videos:
-            title = video["title"].lower()
-            for category, keywords in topic_keywords.items():
-                if any(kw in title for kw in keywords):
-                    topic_counts[category] += 1
-                    break
-
-        sorted_topics = [item[0] for item in sorted(topic_counts.items(), key=lambda x: (-x[1], x[0])) if item[1] > 0]
-        topic_summary = ", ".join(sorted_topics) if sorted_topics else "No editorial fit."
-
-        st.markdown(f"**🧠 Topic Clusters (based on recent videos):** {topic_summary}")
-        
+        # Creator Overview
+        st.markdown("---")
+        st.header("🎯 Creator Overview")
+        st.markdown(f"**🧠 Topic Clusters:** {clusters}")
         col1, col2 = st.columns(2)
         with col1:
-            st.markdown(f"**👤 Channel Name:** {metadata['title']}")
-            st.markdown(f"**🔗 Handle:** `{metadata['handle']}`")
-            st.markdown(f"**🆔 Channel ID:** `{metadata['id']}`")
+            st.markdown(f"**👤 Channel Name:** {meta['title']}")
+            st.markdown(f"**🔗 Handle:** `{meta['handle']}`")
+            st.markdown(f"**🆔 Channel ID:** `{meta['id']}`")
         with col2:
-            st.markdown(f"**🌍 Country:** {metadata['country']}")
-            st.markdown(f"**👥 Subscribers:** {metadata['subs']:,}")
-            st.markdown(f"[🔗 View Channel](https://www.youtube.com/channel/{metadata['id']})")
+            st.markdown(f"**🌍 Country:** {meta['country']}")
+            st.markdown(f"**👥 Subscribers:** {meta['subs']:,}")
+            st.markdown(f"[🔗 View Channel](https://www.youtube.com/channel/{meta['id']})")
 
-        st.subheader("📊 Sponsorship Calculator")
-        col1, col2 = st.columns(2)
+        # Sponsorship Calculator
+        st.markdown("---")
+        st.header("💰 Sponsorship Calculator")
+        col1, col2 = st.columns([1, 2])
         with col1:
             st.markdown(f"""
-            <div style='background-color:#f9f9f9; padding:1.2rem; border-radius:10px; text-align:center;'>
-                <b>Average Views</b><br><span style='font-size:2rem;color:#FFCD78;'>{avg_views:,}</span>
+            <div style='background-color:#fdf6ec; padding:1rem; border-radius:8px; border:1px solid #f4d6a0; text-align:center'>
+            <span style='font-size: 1.2rem;'>📺 Average Views</span>
+            <div style='font-size: 2rem; font-weight: bold; color:#FFA726'>{avg_views:,}</div>
             </div>
             """, unsafe_allow_html=True)
         with col2:
-            cpv_options = {
-                "Conservative CVR (0.30%)": 0.003,
-                "Median CVR (0.35%)": 0.0035,
-                "Best Case CVR (0.50%)": 0.005
-            }
-            selected_label = st.selectbox("🌟 Select CPV Scenario", options=list(cpv_options.keys()))
-            target_cpv = cpv_options[selected_label]
-            recommended_price = round(avg_views * target_cpv)
-            st.markdown(f"**Target CPV:** ${target_cpv:.4f}")
-            st.markdown(f"**Recommended Cost per Video:** ${recommended_price:,}")
+            cpvs = {"Conservative (0.3%)": 0.003, "Median (0.35%)": 0.0035, "Best Case (0.5%)": 0.005}
+            label = st.selectbox("🌟 Choose CPV Scenario", options=list(cpvs.keys()))
+            target_cpv = cpvs[label]
+            price = round(avg_views * target_cpv)
+            st.markdown(f"**🎯 Target CPV:** ${target_cpv:.4f}")
+            st.markdown(f"**💸 Recommended Price per Video:** **${price:,}**")
 
-        st.subheader("📈 Growth Over Time (Views)")
-        views_df = pd.DataFrame(videos)
-        views_df["published"] = pd.to_datetime(views_df["published"])
-        views_df = views_df.sort_values(by="published").reset_index(drop=True)
-        views_df["label"] = views_df["published"].dt.strftime("%b %d")
+        # Growth Chart
+        st.markdown("---")
+        st.header("📈 Growth Over Time (Views)")
+        df = pd.DataFrame(videos)
+        df["published"] = pd.to_datetime(df["published"])
+        df = df.sort_values("published")
+        df["label"] = df["published"].dt.strftime("%b %d")
 
-        chart = alt.Chart(views_df).mark_bar().encode(
-            x=alt.X("label:N", title="Publish Date", sort=None),
-            y=alt.Y("views:Q", title="Views"),
-            tooltip=["label", "views", "title"]
-        ).properties(height=400)
+        chart = alt.Chart(df).mark_bar().encode(
+            x=alt.X("label:N", sort=None),
+            y="views:Q",
+            tooltip=["title", "views"]
+        ).properties(width=1000, height=400)
         st.altair_chart(chart, use_container_width=True)
 
-        st.subheader("🔥 Top 10 Performing Videos")
-        df = pd.DataFrame(videos)
-        top_videos = df.sort_values(by="views", ascending=False).head(10)
-        top_videos["video_url"] = top_videos["video_id"].apply(lambda x: f"https://www.youtube.com/watch?v={x}")
-        top_videos["title"] = top_videos.apply(lambda row: f'<a href="{row.video_url}" target="_blank">{row.title}</a>', axis=1)
-        display_df = top_videos[["title", "views", "likes", "comments"]]
-        display_df.columns = ["🎬 Title", "👁️ Views", "👍 Likes", "💬 Comments"]
-        table_html = display_df.to_html(escape=False, index=False)
-        st.markdown(f"<div class='video-table'>{table_html}</div>", unsafe_allow_html=True)
+        # Top 10
+        st.markdown("---")
+        st.header("🔥 Top 10 Performing Videos")
+        top = df.sort_values("views", ascending=False).head(10)
+        top["video_url"] = top["video_id"].apply(lambda x: f"https://www.youtube.com/watch?v={x}")
+        top["title"] = top.apply(lambda r: f"<a href='{r.video_url}' target='_blank'>{r.title}</a>", axis=1)
+        table = top[["title", "views", "likes", "comments"]]
+        table.columns = ["🎬 Title", "👁️ Views", "👍 Likes", "💬 Comments"]
+        st.markdown(table.to_html(escape=False, index=False), unsafe_allow_html=True)
 
-        st.subheader("🚨 Brand Safety & HEART Assessment")
+        # Brand Safety
+        st.markdown("---")
+        st.header("🚨 Brand Safety & HEART Assessment")
         try:
-            search_query = f"{metadata['title']} YouTube creator news OR controversy OR reviews"
-            st.markdown(f"🔍 Using enhanced search query: `{search_query}`")
-            ai_response = get_brand_safety_assessment(search_query)
-            parsed = json.loads(ai_response)
-            st.markdown(f"**Brand Risk Score:** {parsed.get('brand_risk_score', 'N/A')}")
-            st.markdown(f"**HEART Values:** {parsed.get('heart_values', {})}")
-            st.markdown(f"**Summary:** {parsed.get('summary', '')}")
-        except Exception as err:
+            query = f"{meta['title']} YouTube creator news OR controversy OR reviews"
+            st.markdown(f"🔍 Using enhanced query: `{query}`")
+            risk = get_brand_safety(query)
+            st.markdown(f"**Brand Risk Score:** {risk['brand_risk_score']}")
+            st.markdown(f"**HEART Values:** {risk['heart_values']}")
+            st.markdown(f"**Summary:** {risk['summary']}")
+        except Exception as e:
             st.warning("⚠️ Unable to parse AI response.")
-            st.markdown(f"Raw AI response unavailable. Error: {err}")
+            st.text(str(e))
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")

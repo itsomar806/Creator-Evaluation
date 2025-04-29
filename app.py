@@ -1,17 +1,17 @@
-# 🧠 YouTube Creator Audit Tool (Updated & Polished)
+# 🧐 YouTube Creator Audit Tool (Fully Updated)
 import streamlit as st
 import pandas as pd
 import altair as alt
 import json
 import os
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse
 from serpapi import GoogleSearch
 import googleapiclient.discovery
 import openai
 
 # Load secrets
 openai.api_key = st.secrets["OPENAI_API_KEY"]
-client = openai.OpenAI()  # NEW - fixes ChatCompletion issue
+client = openai.OpenAI()
 YOUTUBE_API_KEY = st.secrets["YOUTUBE_API_KEY"]
 SERPAPI_API_KEY = st.secrets["SERPAPI_API_KEY"]
 
@@ -101,7 +101,7 @@ You're a brand safety analyst. Based on these findings, rate the YouTube creator
 Findings:
 {context}
 """
-    response = client.chat.completions.create(  # UPDATED
+    response = client.chat.completions.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": "You evaluate creators for brand risks."},
@@ -123,7 +123,6 @@ if st.button("Run Audit") and url:
         avg_views = calculate_avg_views(videos)
         clusters = get_topic_clusters(videos)
 
-        # Creator Overview
         st.divider()
         st.subheader("🎯 Creator Overview")
         st.markdown(f"**🧠 Topic Clusters:** {clusters}")
@@ -137,24 +136,24 @@ if st.button("Run Audit") and url:
             st.markdown(f"**👥 Subscribers:** {meta['subs']:,}")
             st.markdown(f"[🔗 View Channel](https://www.youtube.com/channel/{meta['id']})")
 
-        # Sponsorship Calculator
+        # Centered Sponsorship Calculator
         st.divider()
         st.subheader("💰 Sponsorship Calculator")
-        col1, col2 = st.columns([1, 2])
-        with col1:
-            st.markdown(f"""
-            <div style='background-color:#fdf6ec; padding:1rem; border-radius:8px; border:1px solid #f4d6a0; text-align:center'>
-            <span style='font-size: 1.2rem;'>📺 Average Views</span>
-            <div style='font-size: 2rem; font-weight: bold; color:#FFA726'>{avg_views:,}</div>
+        cpvs = {"Conservative (0.3%)": 0.003, "Median (0.35%)": 0.0035, "Best Case (0.5%)": 0.005}
+        label = st.selectbox("🌟 Choose CPV Scenario", options=list(cpvs.keys()))
+        target_cpv = cpvs[label]
+        price = round(avg_views * target_cpv)
+
+        st.markdown(f"""
+        <div style='display: flex; justify-content: center; padding: 1rem 0;'>
+            <div style='background-color:#fdf6ec; padding:1.5rem 2rem; border-radius:10px; border:1px solid #f4d6a0; text-align:center; min-width: 280px;'>
+                <div style='font-size: 1.2rem;'>📺 <strong>Average Views</strong></div>
+                <div style='font-size: 2.5rem; font-weight: bold; color:#FFA726'>{avg_views:,}</div>
+                <div style='margin-top: 1rem; font-size: 1rem;'>🎯 <strong>Target CPV:</strong> ${target_cpv:.4f}</div>
+                <div style='font-size: 1rem;'>💸 <strong>Recommended Price per Video:</strong> ${price:,}</div>
             </div>
-            """, unsafe_allow_html=True)
-        with col2:
-            cpvs = {"Conservative (0.3%)": 0.003, "Median (0.35%)": 0.0035, "Best Case (0.5%)": 0.005}
-            label = st.selectbox("🌟 Choose CPV Scenario", options=list(cpvs.keys()))
-            target_cpv = cpvs[label]
-            price = round(avg_views * target_cpv)
-            st.markdown(f"**🎯 Target CPV:** ${target_cpv:.4f}")
-            st.markdown(f"**💸 Recommended Price per Video:** **${price:,}**")
+        </div>
+        """, unsafe_allow_html=True)
 
         # Growth Chart
         st.divider()
@@ -163,7 +162,6 @@ if st.button("Run Audit") and url:
         df["published"] = pd.to_datetime(df["published"])
         df = df.sort_values("published")
         df["label"] = df["published"].dt.strftime("%b %d")
-
         chart = alt.Chart(df).mark_bar().encode(
             x=alt.X("label:N", sort=None),
             y="views:Q",
@@ -171,27 +169,47 @@ if st.button("Run Audit") and url:
         ).properties(width=1000, height=400)
         st.altair_chart(chart, use_container_width=True)
 
-        # Top 10
+        # Top 10 Performing Videos
         st.divider()
         st.subheader("🔥 Top 10 Performing Videos")
         top = df.sort_values("views", ascending=False).head(10)
         top["Video URL"] = top["video_id"].apply(lambda x: f"https://www.youtube.com/watch?v={x}")
-
         table = top[["title", "views", "likes", "comments", "Video URL"]]
         table.columns = ["🎬 Title", "👁️ Views", "👍 Likes", "💬 Comments", "🔗 Link"]
-
         st.dataframe(table, use_container_width=True)
 
         # Brand Safety
         st.divider()
-        st.subheader("🚨 Brand Safety & HEART Assessment")
+        st.subheader("🛘️ Brand Safety & HEART Assessment")
         try:
             query = f"{meta['title']} YouTube creator news OR controversy OR reviews"
             st.markdown(f"🔍 Using enhanced query: `{query}`")
             risk = get_brand_safety(query)
-            st.markdown(f"**Brand Risk Score:** {risk['brand_risk_score']}")
-            st.markdown(f"**HEART Values:** {risk['heart_values']}")
-            st.markdown(f"**Summary:** {risk['summary']}")
+            score_color = "#4CAF50" if risk["brand_risk_score"] <= 3 else "#FFC107" if risk["brand_risk_score"] <= 6 else "#F44336"
+
+            st.markdown(f"""
+            <div style='border:1px solid #ddd; padding:1.5rem; border-radius:10px; background-color:#f9f9f9'>
+                <div style='font-size:1.1rem; margin-bottom:1rem;'>
+                    <strong>🧪 Brand Risk Score:</strong>
+                    <span style='padding:4px 12px; background-color:{score_color}; color:white; border-radius:20px; font-weight:bold;'>
+                        {risk["brand_risk_score"]}
+                    </span>
+                </div>
+                <div style='margin-bottom:1rem;'><strong>❤️ HEART Values:</strong><br>
+                    <ul>
+                        <li>Humble: {risk["heart_values"]["Humble"]}</li>
+                        <li>Empathetic: {risk["heart_values"]["Empathetic"]}</li>
+                        <li>Adaptable: {risk["heart_values"]["Adaptable"]}</li>
+                        <li>Remarkable: {risk["heart_values"]["Remarkable"]}</li>
+                        <li>Transparent: {risk["heart_values"]["Transparent"]}</li>
+                    </ul>
+                </div>
+                <div><strong>📝 Explanation:</strong><br>
+                    {risk["summary"]}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
         except Exception as e:
             st.warning("⚠️ Unable to parse AI response.")
             st.text(str(e))

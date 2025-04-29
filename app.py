@@ -15,6 +15,11 @@ client = openai.OpenAI()
 YOUTUBE_API_KEY = st.secrets["YOUTUBE_API_KEY"]
 SERPAPI_API_KEY = st.secrets["SERPAPI_API_KEY"]
 
+# CPV values and selectbox (moved to global)
+cpvs = {"Conservative (0.3%)": 0.003, "Median (0.35%)": 0.0035, "Best Case (0.5%)": 0.005}
+label = st.selectbox("🌟 Choose CPV Scenario", options=list(cpvs.keys()), key="cpv_option")
+target_cpv = cpvs[label]
+
 # --- UTILITIES ---
 def extract_channel_id_from_url(url):
     if '@' in url:
@@ -123,6 +128,11 @@ if st.button("Run Audit") and url:
         avg_views = calculate_avg_views(videos)
         clusters = get_topic_clusters(videos)
 
+        st.session_state["meta"] = meta
+        st.session_state["videos"] = videos
+        st.session_state["avg_views"] = avg_views
+        st.session_state["clusters"] = clusters
+
         st.divider()
         st.subheader("🎯 Creator Overview")
         st.markdown(f"**🧠 Topic Clusters:** {clusters}")
@@ -136,25 +146,21 @@ if st.button("Run Audit") and url:
             st.markdown(f"**👥 Subscribers:** {meta['subs']:,}")
             st.markdown(f"[🔗 View Channel](https://www.youtube.com/channel/{meta['id']})")
 
-        # Centered Sponsorship Calculator
-        st.divider()
-        st.subheader("💰 Sponsorship Calculator")
-        cpvs = {"Conservative (0.3%)": 0.003, "Median (0.35%)": 0.0035, "Best Case (0.5%)": 0.005}
-        label = st.selectbox("🌟 Choose CPV Scenario", options=list(cpvs.keys()))
-        target_cpv = cpvs[label]
-        price = round(avg_views * target_cpv)
-
-        st.markdown(f"""
-        <div style='display: flex; justify-content: center; padding: 1rem 0;'>
-            <div style='background-color:#fdf6ec; padding:1.5rem 2rem; border-radius:10px; border:1px solid #f4d6a0; text-align:center; min-width: 280px;'>
-                <div style='font-size: 1.2rem;'>📺 <strong>Average Views</strong></div>
-                <div style='font-size: 2.5rem; font-weight: bold; color:#FFA726'>{avg_views:,}</div>
-                <div style='margin-top: 1rem; font-size: 1rem;'>🎯 <strong>Target CPV:</strong> ${target_cpv:.4f}</div>
-                <div style='font-size: 1rem;'>💸 <strong>Recommended Price per Video:</strong> ${price:,}</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
+# Show Sponsorship Calculator if session_state has data
+if "videos" in st.session_state and "avg_views" in st.session_state:
+    st.divider()
+    st.subheader("💰 Sponsorship Calculator")
+    avg_views = st.session_state["avg_views"]
+    price = round(avg_views * target_cpv)
+    st.markdown(f"""
+    <div style='background-color:#fdf6ec; padding:1.5rem 2rem; border-radius:10px; border:1px solid #f4d6a0; text-align:center; width:100%;'>
+        <div style='font-size: 1.2rem;'>📺 <strong>Average Views</strong></div>
+        <div style='font-size: 2.5rem; font-weight: bold; color:#FFA726'>{avg_views:,}</div>
+        <div style='margin-top: 1rem; font-size: 1rem;'>🎯 <strong>Target CPV:</strong> ${target_cpv:.4f}</div>
+        <div style='font-size: 1rem;'>💸 <strong>Recommended Price per Video:</strong> ${price:,}</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
         # Growth Chart
         st.divider()
         st.subheader("📈 Growth Over Time (Views)")

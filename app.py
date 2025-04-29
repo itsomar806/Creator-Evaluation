@@ -86,7 +86,6 @@ def get_topic_clusters(videos):
 def get_brand_safety(query):
     results = GoogleSearch({"q": query, "api_key": SERPAPI_API_KEY}).get_dict().get("organic_results", [])
     context = "\n".join([f"- {r.get('title')}\n{r.get('snippet')}\n{r.get('link')}" for r in results])
-
     prompt = f"""
 You are a brand safety analyst. Based on the findings below, return a detailed JSON assessment:
 
@@ -113,7 +112,7 @@ Findings:
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are a brand safety evaluator. Always respond with strict valid JSON format."},
+                {"role": "system", "content": "You are a brand safety evaluator. You must return ONLY a valid JSON object. Do NOT add any commentary, only valid JSON."},
                 {"role": "user", "content": prompt}
             ],
             response_format="json"

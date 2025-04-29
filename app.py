@@ -9,11 +9,20 @@ from serpapi import GoogleSearch
 import googleapiclient.discovery
 import openai
 
+# MUST BE FIRST: Page config
+st.set_page_config(page_title="YouTube Creator Audit", layout="wide")
+
 # Load secrets
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 client = openai.OpenAI()
 YOUTUBE_API_KEY = st.secrets["YOUTUBE_API_KEY"]
 SERPAPI_API_KEY = st.secrets["SERPAPI_API_KEY"]
+
+# Reset button
+if st.button("🔄 Reset Audit"):
+    for key in ["meta", "videos", "avg_views", "clusters", "audit_complete"]:
+        st.session_state.pop(key, None)
+    st.experimental_rerun()
 
 # CPV values and selectbox
 cpvs = {"Conservative (0.3%)": 0.003, "Median (0.35%)": 0.0035, "Best Case (0.5%)": 0.005}

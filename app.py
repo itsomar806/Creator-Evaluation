@@ -96,7 +96,7 @@ def get_brand_safety(query):
     prompt = f"""
 You're a brand safety analyst. Based on these findings, rate the YouTube creator using this JSON format:
 {{
-  "brand_risk_score": 1-10,
+  "brand_risk_score": integer from 1 to 10 (1 = low risk, 10 = high risk),
   "risk_flags": ["list if any"],
   "heart_values": {{
     "Humble": "Yes/No",
@@ -115,7 +115,8 @@ Findings:
     response = client.chat.completions.create(
         model="gpt-4",
         messages=[
-            {"role": "system", "content": "You evaluate creators for brand risks."},
+            {"role": "system", "content": "You are a brand safety evaluator. Use a risk score from 1 (very safe) to 10 (very risky). Be consistent and explain why."
+},
             {"role": "user", "content": prompt}
         ]
     )

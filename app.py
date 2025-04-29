@@ -91,10 +91,14 @@ def get_topic_clusters(videos):
 
 def get_brand_safety(query):
     results = GoogleSearch({"q": query, "api_key": SERPAPI_API_KEY}).get_dict().get("organic_results", [])
-    context = "".join([f"- {r.get('title')}{r.get('snippet')}{r.get('link')}" for r in results])
+    context = "
+".join([f"- {r.get('title')}
+{r.get('snippet')}
+{r.get('link')}" for r in results])
 
     prompt = f"""
-You're a brand safety analyst. Based on these findings, rate the YouTube creator using this JSON format:
+You are a brand safety analyst. Based on the findings below, return a JSON rating:
+
 {{
   "brand_risk_score": integer from 1 to 10 (1 = low risk, 10 = high risk),
   "risk_flags": ["list if any"],
@@ -105,27 +109,30 @@ You're a brand safety analyst. Based on these findings, rate the YouTube creator
     "Remarkable": "Yes/No",
     "Transparent": "Yes/No"
   }},
-  "summary": "short narrative summary"
+  "summary": "short explanation for your score"
 }}
 
 Findings:
 {context}
 """
 
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are a brand safety evaluator. Use a risk score from 1 (very safe) to 10 (very risky). Be consistent and explain why."},
-            {"role": "user", "content": prompt}
-        ]
-    )
-
-    content = response.choices[0].message.content
-
-    if content and content.strip():
-        return json.loads(content)
-    else:
-        raise ValueError("Empty response from AI. Could not evaluate brand safety.")
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You are a brand safety evaluator. Use a score from 1 (very safe) to 10 (very risky). Return ONLY valid JSON in your reply."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        content = response.choices[0].message.content
+        if not content or not content.strip():
+            raise ValueError("OpenAI returned empty content.")
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError:
+            raise ValueError("OpenAI returned invalid JSON. Content: " + repr(content))
+    except Exception as e:
+        raise ValueError(f"OpenAI API call failed: {e}")
 
 # --- APP LOGIC ---
 st.title("📊 YouTube Creator Audit")
